@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+sqlalchemy
+google-generativeai
+python-dotenv
+psycopg2-binary
+gunicorn
+python-dateutil

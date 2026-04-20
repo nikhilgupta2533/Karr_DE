@@ -1,0 +1,50 @@
+.main-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  padding-top: 20px;
+  position: relative;
+  z-index: 5;
+}
+
+/* Tab Container */
+.tab-content-wrapper {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--glass-border);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--glass-border-bright);
+}
+
+/* Global Button Reset for Magnetic Feel */
+button {
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+
+@media (min-width: 600px) {
+  .app-container {
+    padding-top: 40px;
+    margin: 0 auto;
+    border-left: 1px solid var(--glass-border);
+    border-right: 1px solid var(--glass-border);
+    box-shadow: 0 0 100px rgba(0,0,0,0.8);
+  }
+}
+

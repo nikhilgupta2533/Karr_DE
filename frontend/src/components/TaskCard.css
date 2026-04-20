@@ -1,0 +1,201 @@
+.task-card {
+  border-radius: var(--radius-md);
+  background: var(--bg-glass);
+  border: 1px solid var(--glass-border);
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  position: relative;
+  overflow: hidden;
+  animation: slideInTask 0.5s var(--ease-soft);
+  transition: all 0.4s var(--ease-soft);
+  margin-bottom: 16px;
+}
+
+.task-card.pinned {
+  border-left: 3px solid var(--accent-1);
+}
+
+.task-card:hover {
+  background: var(--bg-glass-hover);
+  border-color: var(--glass-border-bright);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+}
+
+.task-card.completed {
+  opacity: 0.6;
+  filter: grayscale(0.5);
+}
+
+.task-card.loading {
+  opacity: 0.8;
+  cursor: wait;
+}
+
+.check-btn {
+  background: hsla(0, 0%, 100%, 0.05);
+  border: 1px solid var(--glass-border);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all 0.3s var(--ease-bounce);
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.check-btn:hover {
+  background: hsla(160, 100%, 50%, 0.1);
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.check-icon.checked {
+  color: var(--success);
+  animation: popCheck 0.5s var(--ease-bounce);
+  filter: drop-shadow(0 0 10px hsla(160, 100%, 50%, 0.5));
+}
+
+.task-texts {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+}
+
+.task-title {
+  color: var(--text-light);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: all 0.3s var(--ease-soft);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.task-card.completed .task-title {
+  text-decoration: line-through;
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+
+.task-raw {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 400;
+  opacity: 0.7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.task-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  transform: translateX(10px);
+  transition: all 0.4s var(--ease-soft);
+}
+
+.task-card:hover .task-controls {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.control-btn {
+  background: var(--bg-glass);
+  border: 1px solid var(--glass-border);
+  color: var(--text-muted);
+  padding: 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s var(--ease-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.control-btn:hover {
+  color: var(--text-light);
+  border-color: var(--glass-border-bright);
+  background: hsla(0, 0%, 100%, 0.1);
+}
+
+.control-btn.pin-active {
+  color: var(--accent-1);
+  border-color: var(--accent-1);
+}
+
+.control-btn.delete-btn:hover {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: white;
+}
+
+.task-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.task-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  background: hsla(0, 0%, 100%, 0.05);
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--glass-border);
+  font-weight: 700;
+}
+
+.due-badge {
+  color: var(--accent-1);
+  font-weight: 600;
+}
+
+.task-title-input {
+  width: 100%;
+  background: hsla(0, 0%, 100%, 0.05);
+  border: 1px solid var(--accent-1);
+  border-radius: 10px;
+  color: var(--text-light);
+  padding: 8px 12px;
+  font-family: inherit;
+  font-size: 18px;
+  outline: none;
+  box-shadow: 0 0 15px hsla(180, 100%, 50%, 0.1);
+}
+
+.skeleton-block {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .task-controls {
+    opacity: 1;
+    transform: none;
+  }
+}
+
