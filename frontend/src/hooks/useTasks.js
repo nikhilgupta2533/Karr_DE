@@ -4,8 +4,8 @@ const SETTINGS_KEY = 'karde_settings';
 const PINNED_KEY = 'karde_pinned';
 const CACHE_KEY = 'karde_tasks_cache';
 const NOTIFY_DENIED_TOAST_KEY = 'karde_notify_denied_shown';
-const API_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
-const API_URL = `${API_BASE}/api/tasks`;
+const API_BASE = '/api';
+const API_URL = `${API_BASE}/tasks`;
 
 export const getYYYYMMDD = (d) => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
