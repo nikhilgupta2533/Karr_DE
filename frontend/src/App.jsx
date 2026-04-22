@@ -23,6 +23,12 @@ function App() {
   }, []);
 
   useEffect(() => {
+    const onOpenSettings = () => setShowSettings(true);
+    window.addEventListener('karde:open-settings', onOpenSettings);
+    return () => window.removeEventListener('karde:open-settings', onOpenSettings);
+  }, []);
+
+  useEffect(() => {
     const sendTasksToSw = () => {
       if (!('serviceWorker' in navigator)) return;
       if (navigator.serviceWorker.controller) {

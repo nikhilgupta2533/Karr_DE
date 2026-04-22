@@ -4,8 +4,8 @@ const SETTINGS_KEY = 'karde_settings';
 const PINNED_KEY = 'karde_pinned';
 const CACHE_KEY = 'karde_tasks_cache';
 const NOTIFY_DENIED_TOAST_KEY = 'karde_notify_denied_shown';
-const API_BASE = '/api';
-const API_URL = `${API_BASE}/tasks`;
+const API_HOST = (import.meta.env.VITE_API_URL || '').trim().replace(/\/$/, '');
+const API_URL = API_HOST ? `${API_HOST}/api/tasks` : '/api/tasks';
 
 export const getYYYYMMDD = (d) => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -19,7 +19,13 @@ export function useTasks() {
       return [];
     }
   });
-  const [settings, setSettings] = useState(() => JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{"apiKey":""}'));
+  const [settings, setSettings] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{"apiKey":""}');
+    } catch {
+      return { apiKey: "" };
+    }
+  });
   const [toast, setToast] = useState({ show: false, msg: '', actions: [] });
   const [dailyLimitToastShown, setDailyLimitToastShown] = useState(false);
   const toastTimerRef = useRef(null);
@@ -62,6 +68,22 @@ export function useTasks() {
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings || { apiKey: "" }));
+    } catch {
+      // ignore storage failures (private mode / quota)
+    }
+  }, [settings]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(tasks || []));
+    } catch {
+      // ignore storage failures (private mode / quota)
+    }
+  }, [tasks]);
 
   useEffect(() => {
     if (!('Notification' in window)) return;
@@ -113,9 +135,16 @@ export function useTasks() {
     const nowIso = new Date().toISOString();
     const title = options.title || rawString;
     const tempTask = {
-      id: tId, raw: rawString, title, status: 'pending', addedAt: nowIso,
-      is_pinned: false, is_recurring: Boolean(options.is_recurring),
-      recurrence: options.recurrence || null, due_time: options.due_time || null, loading: true
+      id: tId, 
+      raw: rawString, 
+      title: title || 'New Task', 
+      status: 'pending', 
+      addedAt: nowIso,
+      is_pinned: false, 
+      is_recurring: Boolean(options.is_recurring),
+      recurrence: options.recurrence || null, 
+      due_time: options.due_time || null, 
+      loading: true
     };
 
     setTasks(prev => [tempTask, ...prev]);
@@ -132,6 +161,19 @@ export function useTasks() {
       if (!res.ok) throw new Error();
       const realTask = await res.json();
       setTasks(prev => prev.map(t => t.id === tId ? { ...realTask, loading: false } : t));
+      if (realTask?.ai_failed) {
+        const reason = realTask.ai_failure_reason || 'offline';
+        if (reason === 'daily_limit' && !dailyLimitToastShown) {
+          setDailyLimitToastShown(true);
+          showToast('AI daily limit reached for the default key. Add your own Gemini API key in Settings to keep AI on.', [
+            { label: 'Open Settings', onClick: () => window.dispatchEvent(new Event('karde:open-settings')) },
+          ]);
+        } else if (reason === 'rate_limit' || reason === 'offline' || reason === 'model_not_found') {
+          showToast('AI is unavailable for the default key. Add your Gemini API key in Settings to enable AI titles.', [
+            { label: 'Open Settings', onClick: () => window.dispatchEvent(new Event('karde:open-settings')) },
+          ]);
+        }
+      }
     } catch {
       setTasks(prev => prev.map(t => t.id === tId ? { ...t, loading: false, title } : t));
       showToast("Sync failed – saved locally.");
@@ -258,12 +300,20 @@ export function useTasks() {
     const task = tasks.find(x => x.id === id);
     if (!task) return;
     const nextPinned = !task.is_pinned;
+    const pinnedSet = getPinnedSet();
+    if (nextPinned) pinnedSet.add(id);
+    else pinnedSet.delete(id);
+    setPinnedSet(pinnedSet);
     setTasks(prev => prev.map(x => x.id === id ? { ...x, is_pinned: nextPinned } : x));
     try {
       await fetch(`${API_URL}/${id}`, {
         method: "PUT", headers: getHeaders(), body: JSON.stringify({ is_pinned: nextPinned })
       });
     } catch {
+      const rollbackSet = getPinnedSet();
+      if (nextPinned) rollbackSet.delete(id);
+      else rollbackSet.add(id);
+      setPinnedSet(rollbackSet);
       setTasks(prev => prev.map(x => x.id === id ? { ...x, is_pinned: !nextPinned } : x));
     }
   };
@@ -276,6 +326,10 @@ export function useTasks() {
       if (confirm("Clear all?")) {
         await fetch(`${API_URL}/clear`, { method: "POST" });
         setTasks([]);
+        try {
+          localStorage.removeItem(CACHE_KEY);
+          localStorage.removeItem(PINNED_KEY);
+        } catch {}
       }
     },
     confirmBulkComplete: (taskIds) => {

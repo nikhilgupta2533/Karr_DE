@@ -2,7 +2,6 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: -12px;
 }
 
 .records-stats-header h3 {
@@ -57,18 +56,19 @@
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
 }
 
 .stat-card {
-  padding: 24px;
+  padding: 20px;
   border-radius: var(--radius-md);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   border: 1px solid var(--glass-border);
   background: var(--bg-glass);
+  min-height: 100px;
 }
 
 .stat-label {
@@ -138,7 +138,8 @@
 .history-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
+  padding-bottom: 20px;
 }
 
 .day-group {
@@ -209,5 +210,37 @@
   text-decoration: line-through;
   color: var(--text-muted);
   opacity: 0.6;
+}
+
+.clear-search-btn {
+  background: hsla(0, 0%, 100%, 0.06);
+  border: 1px solid var(--glass-border);
+  color: var(--text-muted);
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s var(--ease-soft);
+  flex-shrink: 0;
+}
+
+.clear-search-btn:hover {
+  background: hsla(0, 100%, 60%, 0.15);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.no-results {
+  padding: 20px 24px;
+  border-radius: var(--radius-md);
+  text-align: center;
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 15px;
 }
 

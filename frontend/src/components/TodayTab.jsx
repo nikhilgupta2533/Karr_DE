@@ -95,10 +95,17 @@ export function TodayTab({ tasks, onAddTask, onToggleTask, onDeleteTask, onToggl
 
   const formatTime = (value) => {
     if (!value) return '';
-    const [h, m] = value.split(':');
-    const d = new Date();
-    d.setHours(Number(h), Number(m));
-    return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    try {
+      const parts = value.split(':');
+      if (parts.length < 2) return value;
+      const [h, m] = parts;
+      const d = new Date();
+      d.setHours(Number(h), Number(m));
+      if (isNaN(d.getTime())) return value;
+      return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    } catch {
+      return value;
+    }
   };
 
   return (
@@ -148,7 +155,7 @@ export function TodayTab({ tasks, onAddTask, onToggleTask, onDeleteTask, onToggl
             <option value="monthly">Monthly</option>
           </select>
 
-          <div className="template-wrap" ref={templateRef}>
+          <div className="template-wrap" ref={templateRef} style={{ position: 'relative' }}>
             <button 
               type="button" 
               className={`mini-icon-btn magnetic-btn ${showTemplates ? 'active' : ''}`} 

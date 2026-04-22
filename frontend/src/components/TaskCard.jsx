@@ -7,9 +7,17 @@ export function TaskCard({ task, onToggle, onDelete, onTogglePin, onUpdateTitle,
   const [draftTitle, setDraftTitle] = useState(task.title || '');
   const [showTimeEditor, setShowTimeEditor] = useState(false);
   const [lastTapAt, setLastTapAt] = useState(0);
-  
-  const d = new Date(task.addedAt);
-  const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  // Keep hooks unconditional (even during loading skeleton renders)
+  useEffect(() => {
+    if (!editing) setDraftTitle(task.title || '');
+  }, [task.title, editing]);
+
+  const d = task.addedAt ? new Date(task.addedAt) : new Date();
+  const isValidDate = !isNaN(d.getTime());
+  const timeStr = isValidDate 
+    ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : 'Unknown time';
 
   if (task.loading) {
     return (
@@ -25,15 +33,21 @@ export function TaskCard({ task, onToggle, onDelete, onTogglePin, onUpdateTitle,
   const isCompleted = task.status === 'completed';
   const displayTitle = task.title || 'Processing Flow...';
 
-  const cleanTitleOnly = (value) => value.replace(/^[^\w\s]+\s*/, '').trim();
+  const cleanTitleOnly = (value) => (value || '').replace(/^[^\w\s]+\s*/, '').trim();
   const getEmojiPrefix = (value) => {
     const parts = (value || '').trim().split(' ');
     if (!parts.length) return '';
-    return /\p{Emoji}/u.test(parts[0]) ? parts[0] : '';
+    try {
+      // Some environments may not support Unicode property escapes.
+      return /\p{Emoji}/u.test(parts[0]) ? parts[0] : '';
+    } catch {
+      const maybe = parts[0];
+      return maybe && maybe.length <= 4 ? maybe : '';
+    }
   };
 
   const saveTitle = () => {
-    const trimmed = cleanTitleOnly(draftTitle);
+    const trimmed = cleanTitleOnly(draftTitle || '');
     if (!trimmed) {
       setDraftTitle(displayTitle);
       setEditing(false);
@@ -49,17 +63,13 @@ export function TaskCard({ task, onToggle, onDelete, onTogglePin, onUpdateTitle,
     setEditing(true);
   };
 
-  useEffect(() => {
-    if (!editing) setDraftTitle(task.title || '');
-  }, [task.title, editing]);
-
   return (
     <div className={`task-card ${isCompleted ? 'completed' : ''} ${task.is_pinned ? 'pinned' : ''}`}>
-      <button 
-        type="button" 
-        className="check-btn magnetic-btn" 
+      <button
+        type="button"
+        className="check-btn magnetic-btn"
         onClick={() => onToggle(task.id)}
-        aria-label={isCompleted ? "Mark pending" : "Mark completed"}
+        aria-label={isCompleted ? 'Mark pending' : 'Mark completed'}
       >
         {isCompleted ? (
           <CheckCircle2 className="check-icon checked" size={20} strokeWidth={2.5} />
@@ -91,7 +101,9 @@ export function TaskCard({ task, onToggle, onDelete, onTogglePin, onUpdateTitle,
             {displayTitle}
           </div>
         )}
-        <div className="task-raw">{task.raw}</div>
+        {task.raw && task.title && task.raw !== task.title && (
+          <div className="task-raw">{task.raw}</div>
+        )}
         <div className="task-meta">
           <span className="task-meta-item">{timeStr}</span>
           {renderMeta && renderMeta()}
@@ -118,18 +130,18 @@ export function TaskCard({ task, onToggle, onDelete, onTogglePin, onUpdateTitle,
           <Pin size={16} strokeWidth={2} />
         </button>
 
-        <button 
-          type="button" 
-          className="control-btn magnetic-btn" 
+        <button
+          type="button"
+          className="control-btn magnetic-btn"
           onClick={() => setShowTimeEditor((s) => !s)}
           aria-label="Set due time"
         >
           <Clock3 size={16} strokeWidth={2} />
         </button>
 
-        <button 
-          type="button" 
-          className="control-btn delete-btn magnetic-btn" 
+        <button
+          type="button"
+          className="control-btn delete-btn magnetic-btn"
           onClick={() => onDelete(task.id)}
           aria-label="Delete task"
         >
@@ -139,4 +151,3 @@ export function TaskCard({ task, onToggle, onDelete, onTogglePin, onUpdateTitle,
     </div>
   );
 }
-

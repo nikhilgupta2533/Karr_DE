@@ -1,9 +1,8 @@
 .chart-box {
-  padding: 32px 24px;
+  padding: 28px 20px;
   border-radius: var(--radius-md);
   background: var(--bg-glass);
   border: 1px solid var(--glass-border);
-  margin-bottom: 20px;
 }
 
 .insight-card {
@@ -11,7 +10,6 @@
   border-radius: var(--radius-md);
   background: var(--bg-glass);
   border: 1px solid var(--glass-border);
-  margin-bottom: 16px;
   transition: transform 0.3s var(--ease-soft);
 }
 

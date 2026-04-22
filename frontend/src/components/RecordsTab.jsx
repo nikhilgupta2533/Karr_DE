@@ -9,6 +9,11 @@ export function RecordsTab({ tasks }) {
   const [query, setQuery] = useState('');
 
   const toggleDay = (dtStr) => setExpandedDays(p => ({ ...p, [dtStr]: !p[dtStr] }));
+  const safeDateLabel = (dateLike, fallback = 'Unknown') => {
+    const d = new Date(dateLike);
+    if (isNaN(d.getTime())) return fallback;
+    return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  };
 
   // Streaks Calculation
   const days = new Set(tasks.filter(t => t.status === 'completed').map(t => getYYYYMMDD(new Date(t.completedAt))));
@@ -67,7 +72,8 @@ export function RecordsTab({ tasks }) {
   Object.entries(completedByDay).forEach(([k, v]) => {
     if (v > bestWeekCount) {
       bestWeekCount = v;
-      bestWeekDay = new Date(k).toLocaleDateString('en-US', { weekday: 'long' });
+      const d = new Date(k);
+      bestWeekDay = isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString('en-US', { weekday: 'long' });
     }
   });
   const missedByCategory = {};
@@ -182,7 +188,7 @@ export function RecordsTab({ tasks }) {
           <div className="no-results glass-panel">Kuch nahi mila 🙁</div>
         )}
         {sortedKeys.map(dtStr => {
-          let label = dtStr === todayStr ? 'Today' : new Date(dtStr).toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'});
+          let label = dtStr === todayStr ? 'Today' : safeDateLabel(dtStr, dtStr);
           let arr = daysMap[dtStr];
           let compCount = arr.filter(x => x.status === 'completed').length;
           const isExpanded = expandedDays[dtStr] !== false; // default expanded

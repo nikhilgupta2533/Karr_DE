@@ -2,15 +2,14 @@
   border-radius: var(--radius-md);
   background: var(--bg-glass);
   border: 1px solid var(--glass-border);
-  padding: 20px 24px;
+  padding: 16px 20px;
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   animation: slideInTask 0.5s var(--ease-soft);
   transition: all 0.4s var(--ease-soft);
-  margin-bottom: 16px;
 }
 
 .task-card.pinned {
@@ -72,17 +71,17 @@
 
 .task-title {
   color: var(--text-light);
-  font-size: 19px;
+  font-size: 17px;
   font-weight: 600;
   letter-spacing: -0.3px;
   line-height: 1.4;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  word-break: break-word;
+  overflow-wrap: break-word;
   transition: all 0.3s var(--ease-soft);
   display: flex;
-  align-items: center;
-  gap: 10px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .task-card.completed .task-title {
@@ -93,12 +92,14 @@
 
 .task-raw {
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 400;
-  opacity: 0.7;
-  white-space: nowrap;
+  opacity: 0.6;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
 }
 
 .task-controls {
@@ -180,9 +181,27 @@
   color: var(--text-light);
   padding: 8px 12px;
   font-family: inherit;
-  font-size: 18px;
+  font-size: 16px;
   outline: none;
   box-shadow: 0 0 15px hsla(180, 100%, 50%, 0.1);
+}
+
+.task-inline-time {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--accent-1);
+  color: var(--accent-1);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  outline: none;
+  margin-top: 4px;
+}
+
+.task-inline-time::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.5;
+  cursor: pointer;
 }
 
 .skeleton-block {
@@ -195,7 +214,7 @@
 @media (max-width: 768px) {
   .task-controls {
     opacity: 1;
-    transform: none;
+    transform: translateX(0);
   }
 }
 

@@ -6,12 +6,12 @@ from fastapi import FastAPI, Depends, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 from typing import List, Optional
 from datetime import datetime, timezone, timedelta
 from uuid import uuid4
-from database import engine, Base, get_db
-import models
+from .database import engine, Base, get_db
+from . import models
 from dateutil.relativedelta import relativedelta
 import logging
 
@@ -38,7 +38,11 @@ with engine.connect() as conn:
         conn.execute(text("ALTER TABLE tasks ADD COLUMN due_time TEXT"))
         conn.commit()
 
-load_dotenv()
+# Load env vars deterministically regardless of cwd.
+# - Prefer a repo/root `.env` if present (find_dotenv)
+# - Always load `backend/.env` (relative to this file) so GEMINI_API_KEY works locally
+load_dotenv(find_dotenv(), override=False)
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"), override=False)
 app = FastAPI()
 
 gemini_lock = threading.Lock()
@@ -102,10 +106,12 @@ def enforce_gemini_spacing():
 
 
 def serialize_task(row: models.TaskDB, ai_failed: bool = False, ai_failure_reason: Optional[str] = None):
-    row.ai_failed = ai_failed
-    row.ai_failure_reason = ai_failure_reason
-    row.is_pinned = bool(row.is_pinned)
-    row.is_recurring = bool(row.is_recurring)
+    # Ensure transient attributes are attached for Pydantic TaskResponse
+    setattr(row, "ai_failed", ai_failed)
+    setattr(row, "ai_failure_reason", ai_failure_reason)
+    # Ensure these are booleans in the response object
+    setattr(row, "is_pinned", bool(row.is_pinned))
+    setattr(row, "is_recurring", bool(row.is_recurring))
     return row
 
 
@@ -148,7 +154,6 @@ def spawn_next_recurring_task(db: Session, source: models.TaskDB, previous_statu
     
     next_date = get_next_recurrence_date(source.recurrence)
     # Deduplication check: Has this task already been spawned for this next cycle?
-    # We check for a pending task with the same raw text and same target date (ignoring time component for date match)
     next_date_d = next_date.split("T")[0]
     existing = db.query(models.TaskDB).filter(
         models.TaskDB.raw == source.raw,
@@ -180,8 +185,6 @@ def get_tasks(db: Session = Depends(get_db)):
     now_utc = datetime.now(timezone.utc)
     today_str = now_utc.strftime("%Y-%m-%d")
     
-    # Find pending tasks whose addedAt date is in the past
-    # Note: addedAt is stored as ISO format or YYYY-MM-DD
     all_pending = db.query(models.TaskDB).filter(models.TaskDB.status == "pending").all()
     any_changed = False
     for t in all_pending:
@@ -246,32 +249,61 @@ def create_task(task: models.TaskCreate, x_api_key: Optional[str] = Header(None)
             ai_failed = True
             ai_failure_reason = "daily_limit"
         else:
-            try:
-                genai.configure(api_key=api_key_to_use)
-                enforce_gemini_spacing()
-                system_prompt = (
-                    "You are 'Kar De', an intelligent task architect. "
-                    "Format the input into a professional English task title. "
-                    "Rules: 1. Keep it 2-5 words. 2. Start with a relevant emoji. "
-                    "3. Handle Hindi/Hinglish accurately (e.g. 'gym jana hai' -> '💪 Hit the Gym'). "
-                    "4. Return ONLY the formatted string: [Emoji] [Title]."
-                )
-                model = genai.GenerativeModel('gemini-1.5-flash', system_instruction=system_prompt)
-                response = model.generate_content(task.raw)
-                maybe_title = (response.text or "").strip().strip('"')
-                if maybe_title:
-                    title = maybe_title
-                category = guess_category(title)
-                usage_row.count += 1
-                db.commit()
-            except Exception as exc:
-                logger.error(f"Gemini API Error: {exc}")
+            # Valid Gemini models
+            FALLBACK_MODELS = [
+                # Use exact model IDs returned by genai.list_models() for this API key.
+                "models/gemini-2.5-flash",
+                "models/gemini-2.5-pro",
+                "models/gemini-2.0-flash",
+                "models/gemini-2.0-flash-lite",
+            ]
+            system_prompt = (
+                "You are 'Kar De', an intelligent task architect. "
+                "Format the input into a professional English task title. "
+                "Rules: 1. Keep it 2-5 words. 2. Start with a relevant emoji. "
+                "3. Handle Hindi/Hinglish accurately (e.g. 'gym jana hai' -> '💪 Hit the Gym'). "
+                "4. Return ONLY the formatted string: [Emoji] [Title]."
+            )
+            
+            genai.configure(api_key=api_key_to_use)
+            ai_success = False
+            last_failure_reason = None
+            for model_name in FALLBACK_MODELS:
+                try:
+                    enforce_gemini_spacing()
+                    model = genai.GenerativeModel(
+                        model_name=model_name,
+                        system_instruction=system_prompt
+                    )
+                    response = model.generate_content(task.raw)
+                    maybe_title = (response.text or "").strip().strip('"')
+                    if maybe_title:
+                        title = maybe_title
+                    category = guess_category(title)
+                    usage_row.count += 1
+                    db.commit()
+                    ai_success = True
+                    logger.info(f"AI success with model: {model_name}")
+                    break
+                except Exception as exc:
+                    lowered = str(exc).lower()
+                    is_quota = "429" in lowered or "resource_exhausted" in lowered or "quota" in lowered
+                    is_unavailable = "503" in lowered or "unavailable" in lowered
+                    is_not_found = "404" in lowered or "not found" in lowered or "is not found for api version" in lowered
+                    last_failure_reason = "rate_limit" if is_quota else "offline" if is_unavailable else "model_not_found" if is_not_found else "offline"
+                    logger.warning(
+                        f"Model {model_name} failed ({'quota' if is_quota else 'unavail' if is_unavailable else 'not_found' if is_not_found else 'error'}): {str(exc)[:120]}"
+                    )
+                    if is_quota or is_unavailable or is_not_found:
+                        continue
+                    break
+            if not ai_success:
                 ai_failed = True
-                lowered = str(exc).lower()
-                ai_failure_reason = "rate_limit" if "429" in lowered or "rate" in lowered else "offline"
+                ai_failure_reason = last_failure_reason or "offline"
     else:
         ai_failed = True
         ai_failure_reason = "offline"
+
 
     db_task = models.TaskDB(
         id=task.id,

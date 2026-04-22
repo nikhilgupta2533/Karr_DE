@@ -12,6 +12,12 @@ import './InsightsTab.css';
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip);
 
 export function InsightsTab({ tasks }) {
+  const safeDayLabel = (yyyyMMdd, fallback = 'No data') => {
+    const d = new Date(yyyyMMdd);
+    if (isNaN(d.getTime())) return fallback;
+    return d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+  };
+
   // Last 7 Days Chart Data
   const labels = [];
   const data = [];
@@ -80,7 +86,7 @@ export function InsightsTab({ tasks }) {
       counts[dStr] = (counts[dStr] || 0) + 1;
       if (counts[dStr] > bCount) {
           bCount = counts[dStr];
-          bDate = new Date(dStr).toLocaleDateString('en-US', {weekday:'long', month:'short', day:'numeric'});
+          bDate = safeDayLabel(dStr, 'No data');
       }
   });
   const bestDayStr = bCount > 0 ? `${bDate} (${bCount} done)` : 'Complete tasks to see!';
@@ -109,7 +115,7 @@ export function InsightsTab({ tasks }) {
     <div className="view-content active">
       <div className="chart-box glass-panel">
         <div className="insight-title">Last 7 Days</div>
-        <div style={{ height: '180px' }}>
+        <div style={{ height: '200px' }}>
           <Bar data={chartData} options={chartOptions} />
         </div>
       </div>
