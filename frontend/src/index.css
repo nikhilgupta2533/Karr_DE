@@ -26,6 +26,45 @@
   --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* ─── Light Theme Overrides ──────────────────────────────────────────────── */
+:root[data-theme="light"] {
+  --bg-body:              #ede9ff;
+  --bg-glass:             hsla(250, 80%, 98%, 0.72);
+  --bg-glass-hover:       hsla(250, 80%, 95%, 0.90);
+  --glass-border:         hsla(255, 40%, 55%, 0.18);
+  --glass-border-bright:  hsla(255, 40%, 55%, 0.32);
+  --text-light:           #1a1235;
+  --text-muted:           #6b6485;
+  --accent-1:             #0099bb;
+  --accent-2:             #8833cc;
+  --danger:               #cc1144;
+  --success:              #009955;
+}
+
+:root[data-theme="light"] body {
+  background-color: var(--bg-body);
+  background-image:
+    radial-gradient(circle at 10% 20%, hsla(180, 100%, 60%, 0.10), transparent 30%),
+    radial-gradient(circle at 90% 80%, hsla(270, 80%, 75%, 0.10), transparent 30%),
+    radial-gradient(circle at 50% 50%, hsla(255, 70%, 96%, 1), var(--bg-body));
+}
+
+:root[data-theme="light"] .glass-panel {
+  box-shadow:
+    0 4px 24px -1px rgba(100, 80, 180, 0.12),
+    inset 0 0 0 1px hsla(255, 40%, 55%, 0.08);
+}
+
+:root[data-theme="light"] .skeleton-line {
+  background: linear-gradient(90deg,
+    hsla(255, 40%, 55%, 0.05) 25%,
+    hsla(255, 40%, 55%, 0.12) 50%,
+    hsla(255, 40%, 55%, 0.05) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite linear;
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
@@ -172,4 +211,69 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* ─── Print / PDF Export ────────────────────────────────────────────────── */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #111111 !important;
+    font-family: Georgia, 'Times New Roman', serif !important;
+  }
 
+  .app-container,
+  .bottom-nav,
+  .app-header,
+  .app-toast {
+    display: none !important;
+  }
+
+  #karde-print-report {
+    display: block !important;
+    margin: 0 !important;
+    padding: 24px !important;
+    max-width: 100% !important;
+    font-family: Georgia, serif !important;
+    color: #111 !important;
+    background: #fff !important;
+  }
+
+  #karde-print-report h2 { page-break-before: auto; }
+  #karde-print-report table { page-break-inside: avoid; }
+
+  @page {
+    margin: 20mm;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   GLOBAL MOBILE RESPONSIVE
+═══════════════════════════════════════════════════════════════════ */
+
+/* Ensure the app never overflows horizontally */
+html, body { overflow-x: hidden; }
+
+.app-container {
+  /* Safe-area inset for iPhones with home bar */
+  padding-bottom: calc(var(--nav-height) + 40px + env(safe-area-inset-bottom));
+}
+
+@media (max-width: 480px) {
+  :root { --nav-height: 70px; }
+
+  .app-toast {
+    bottom: 90px;
+    white-space: normal;
+    max-width: calc(100vw - 32px);
+    border-radius: 20px;
+    font-size: 13px;
+    text-align: center;
+    padding: 10px 16px;
+  }
+
+  /* Stats grid single column on very small screens */
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .stat-value { font-size: 28px; }
+}
+
+@media (max-width: 360px) {
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+}

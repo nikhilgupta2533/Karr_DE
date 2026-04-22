@@ -2,6 +2,36 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.records-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-glass);
+  border: 1px solid var(--glass-border);
+  color: var(--text-muted);
+  padding: 7px 13px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s var(--ease-soft);
+  font-family: inherit;
+}
+.export-btn:hover {
+  color: var(--accent-1);
+  border-color: var(--accent-1);
+  background: hsla(180,100%,50%,0.06);
 }
 
 .records-stats-header h3 {

@@ -38,8 +38,8 @@
 
 .input-bar {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;   /* rows stack vertically */
+  gap: 0;
   padding: 6px 6px 6px 18px;
   border-radius: 100px;
   background: var(--bg-glass);
@@ -49,6 +49,13 @@
   width: 100%;
 }
 
+/* When time-picker row is visible, switch to card shape */
+.input-bar.input-bar--expanded {
+  border-radius: 24px;
+  padding: 10px 10px 10px 18px;
+  gap: 8px;
+}
+
 .input-bar:focus-within {
   border-color: var(--accent-1);
   background: var(--bg-glass-hover);
@@ -56,9 +63,17 @@
   transform: translateY(-2px);
 }
 
+/* Main text + action buttons row inside the bar */
+.input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
 .input-bar input[type="text"] {
   flex: 1;
-  min-width: 100px;
+  min-width: 80px;
   background: transparent;
   border: none;
   font-family: inherit;
@@ -73,6 +88,26 @@
   color: var(--text-muted);
   font-weight: 400;
   opacity: 0.6;
+}
+
+/* Due-time own row */
+.due-time-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px 2px 4px;
+  border-top: 1px solid var(--glass-border);
+  width: 100%;
+  animation: popIn 0.3s var(--ease-soft);
+}
+.due-time-row-icon { color: var(--accent-1); flex-shrink: 0; }
+.due-time-row-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
 }
 
 .input-actions {
@@ -131,15 +166,16 @@
 }
 
 .due-time-input {
-  background: rgba(0, 0, 0, 0.4);
+  flex: 1;
+  background: rgba(0, 0, 0, 0.35);
   border: 1px solid var(--glass-border);
   color: var(--accent-1);
   border-radius: 100px;
-  padding: 6px 12px;
+  padding: 5px 12px;
   font-family: 'Space Mono', monospace;
   font-size: 12px;
   outline: none;
-  animation: popIn 0.3s var(--ease-soft);
+  min-width: 0;
 }
 
 .due-time-input::-webkit-calendar-picker-indicator {
@@ -432,3 +468,224 @@
 }
 
 
+/* ── Plan My Day button ────────────────────────────────────────────────── */
+.plan-btn {
+  background: var(--bg-glass);
+  border: 1px solid var(--glass-border);
+  color: var(--accent-2);
+  border-radius: 12px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.3s var(--ease-soft);
+}
+.plan-btn:hover, .plan-btn.plan-active {
+  background: hsla(270,100%,65%,0.08);
+  border-color: var(--accent-2);
+  box-shadow: 0 0 20px hsla(270,100%,65%,0.15);
+}
+
+/* ── Plan Day card ─────────────────────────────────────────────────────── */
+.plan-card {
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+  border-color: hsla(270,100%,65%,0.25);
+  animation: fadeIn 0.5s var(--ease-soft);
+}
+.plan-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.plan-card-title {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--accent-2);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.plan-dismiss {
+  background: none; border: none;
+  color: var(--text-muted); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  padding: 4px;
+  border-radius: 50%;
+  transition: color 0.2s;
+}
+.plan-dismiss:hover { color: var(--text-light); }
+.plan-message {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+  font-style: italic;
+}
+.plan-list { display: flex; flex-direction: column; gap: 10px; }
+.plan-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: hsla(0,0%,100%,0.03);
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
+}
+.plan-order {
+  width: 24px; height: 24px; min-width: 24px;
+  border-radius: 50%;
+  background: hsla(270,100%,65%,0.15);
+  color: var(--accent-2);
+  font-weight: 700;
+  font-size: 12px;
+  display: flex; align-items: center; justify-content: center;
+}
+.plan-item-body { flex: 1; }
+.plan-item-title { font-size: 14px; font-weight: 600; color: var(--text-light); }
+.plan-item-reason { font-size: 12px; color: var(--text-muted); font-style: italic; margin-top: 2px; }
+.plan-start-btn {
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+  color: #05020a;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.3s var(--ease-bounce);
+}
+.plan-start-btn:hover { transform: scale(1.05); }
+
+/* ── Decompose preview ─────────────────────────────────────────────────── */
+.decompose-btn { color: var(--accent-2); }
+.decompose-btn:hover:not(:disabled), .decompose-btn.active {
+  border-color: var(--accent-2);
+  color: var(--accent-2);
+  background: hsla(270,100%,65%,0.1);
+}
+.decompose-preview {
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-color: hsla(270,100%,65%,0.2);
+  animation: fadeIn 0.4s var(--ease-soft);
+}
+.decompose-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent-2);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.decompose-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--text-light);
+  cursor: pointer;
+  padding: 6px 0;
+  transition: opacity 0.2s;
+}
+.decompose-step.step-unchecked { opacity: 0.4; }
+.decompose-step input[type="checkbox"] { accent-color: var(--accent-2); width: 14px; height: 14px; cursor: pointer; }
+.step-remove-btn {
+  margin-left: auto;
+  background: none; border: none;
+  color: var(--text-muted); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  padding: 4px; border-radius: 4px;
+  transition: color 0.2s;
+}
+.step-remove-btn:hover { color: var(--danger); }
+.decompose-hint {
+  font-size: 11px; color: var(--text-muted);
+  font-style: italic; margin-top: 4px;
+}
+
+/* ── Focus subtasks ────────────────────────────────────────────────────── */
+.focus-subtasks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: -8px 0 8px;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.focus-subtask-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  color: var(--text-light);
+  opacity: 0.85;
+}
+.focus-subtask-item.done {
+  opacity: 0.4;
+  text-decoration: line-through;
+  color: var(--success);
+}
+
+/* ── Spin animation ────────────────────────────────────────────────────── */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.spin-icon { animation: spin 1s linear infinite; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE
+═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+  .view-content { padding: 0 14px; gap: 14px; }
+
+  /* Input bar */
+  .input-bar          { padding: 5px 5px 5px 14px; }
+  .input-bar.input-bar--expanded { padding: 8px 8px 8px 14px; }
+  .input-bar input[type="text"] { font-size: 14px; }
+  .mini-icon-btn      { width: 30px; height: 30px; }
+  .recurrence-select  { max-width: 58px; padding: 5px 8px; font-size: 10px; }
+  .add-btn            { width: 34px; height: 34px; min-width: 34px; }
+  .input-actions      { gap: 4px; }
+
+  /* Focus overlay */
+  .focus-emoji  { font-size: 80px; }
+  .focus-title  { font-size: 28px; letter-spacing: -1px; }
+  .focus-raw    { font-size: 15px; }
+  .focus-close  { top: 20px; right: 16px; width: 40px; height: 40px; }
+  .focus-card   { gap: 20px; }
+  .focus-actions button { padding: 12px 22px; font-size: 14px; }
+
+  /* Zen timer */
+  .zen-timer      { font-size: 56px; letter-spacing: -2px; }
+  .zen-timer-wrap { top: 20px; }
+
+  /* Plan card */
+  .plan-item      { padding: 8px 10px; gap: 8px; }
+  .plan-item-title{ font-size: 13px; }
+  .plan-start-btn { padding: 5px 10px; font-size: 11px; }
+
+  /* Bulk btn */
+  .bulk-done-btn { font-size: 13px; padding: 12px; }
+}
+
+@media (max-width: 360px) {
+  .view-content { padding: 0 10px; }
+  .focus-emoji  { font-size: 60px; }
+  .focus-title  { font-size: 22px; }
+  .zen-timer    { font-size: 44px; }
+  .recurrence-select { display: none; } /* hide on very small, use default "once" */
+}

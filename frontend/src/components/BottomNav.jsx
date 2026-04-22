@@ -1,11 +1,12 @@
-import { CalendarDays, BarChart, Activity } from 'lucide-react';
+import { CalendarDays, BarChart, Activity, Flame } from 'lucide-react';
 import './BottomNav.css';
 
 export function BottomNav({ activeTab, setActiveTab }) {
   const tabs = [
-    { id: 'today', icon: Activity, label: 'Today' },
+    { id: 'today',   icon: Activity,    label: 'Today' },
     { id: 'records', icon: CalendarDays, label: 'Records' },
-    { id: 'insights', icon: BarChart, label: 'Insights' }
+    { id: 'habits',  icon: Flame,        label: 'Habits' },
+    { id: 'insights',icon: BarChart,     label: 'Insights' },
   ];
 
   return (
@@ -14,19 +15,18 @@ export function BottomNav({ activeTab, setActiveTab }) {
         const Icon = t.icon;
         const isActive = activeTab === t.id;
         return (
-          <button 
-            key={t.id} 
+          <button
+            key={t.id}
             className={`nav-item magnetic-btn ${isActive ? 'active' : ''}`}
             onClick={() => setActiveTab(t.id)}
           >
-
             <div className="nav-icon-wrapper">
               <Icon size={22} className="nav-icon" />
               {isActive && <div className="nav-glow"></div>}
             </div>
             <span>{t.label}</span>
           </button>
-        )
+        );
       })}
     </nav>
   );

@@ -1,24 +1,17 @@
+/* Header */
 .app-header {
-  padding: 40px 24px 20px;
+  padding: 20px 20px 12px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   position: sticky;
   top: 0;
-  background: rgba(5, 2, 10, 0.7);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
   z-index: 100;
-  border-bottom: 1px solid var(--glass-border);
-}
-
-.brand {
-  display: flex;
-  flex-direction: column;
+  backdrop-filter: blur(20px);
 }
 
 .brand h1 {
-  font-size: 36px;
+  font-size: 28px;
   font-weight: 700;
   letter-spacing: -1.5px;
   background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
@@ -28,29 +21,95 @@
 }
 
 .brand span {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
-  text-transform: uppercase;
+  font-weight: 500;
   letter-spacing: 2px;
-  margin-top: 4px;
+  text-transform: uppercase;
 }
 
-.settings-btn {
-  background: var(--bg-glass);
-  border: 1px solid var(--glass-border);
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 10px;
-  border-radius: 12px;
-  transition: all 0.4s var(--ease-soft);
+/* ── User avatar ──────────────────────────────────────────────────── */
+.user-avatar-wrap {
+  display: flex;
+  align-items: center;
+}
+.user-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid var(--glass-border-bright);
+  object-fit: cover;
+}
+.user-avatar--placeholder {
   display: flex;
   align-items: center;
   justify-content: center;
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
 }
 
-.settings-btn:hover {
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-btn,
+.sound-btn {
+  background: var(--bg-glass);
+  border: 1px solid var(--glass-border);
+  color: var(--text-muted);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s var(--ease-soft);
+}
+
+.settings-btn:hover,
+.sound-btn:hover {
+  color: var(--text-light);
+  border-color: var(--glass-border-bright);
+  background: var(--bg-glass-hover);
+}
+
+.sound-btn.active {
   color: var(--accent-1);
   border-color: var(--accent-1);
-  box-shadow: 0 0 20px hsla(180, 100%, 50%, 0.15);
-  transform: rotate(90deg) scale(1.1);
+}
+
+/* ── Mobile header ─────────────────────────────────────────────────── */
+@media (max-width: 420px) {
+  .app-header { padding: 14px 14px 10px; }
+  .brand h1   { font-size: 22px; }
+  .brand span { font-size: 9px; letter-spacing: 1px; }
+
+  .header-actions { gap: 5px; }
+
+  .settings-btn,
+  .sound-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .user-avatar,
+  .user-avatar--placeholder {
+    width: 26px;
+    height: 26px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 360px) {
+  .settings-btn,
+  .sound-btn {
+    width: 30px;
+    height: 30px;
+  }
+  .header-actions { gap: 4px; }
 }
