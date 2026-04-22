@@ -168,7 +168,9 @@ def guess_category(title: str) -> str:
         return 'Home'
     return 'Personal'
 
-def today_key() -> str:
+def today_key(override: Optional[str] = None) -> str:
+    if override:
+        return override
     return datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
 def get_or_create_usage_row(db: Session, day: str) -> models.AIUsageDB:
@@ -592,9 +594,9 @@ def delete_account(db: Session = Depends(get_db), uid: str = Depends(get_current
 # ─── Habit Endpoints ──────────────────────────────────────────────────────────
 
 @app.get("/api/habits", response_model=List[models.HabitResponse])
-def get_habits(db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
+def get_habits(date: Optional[str] = None, db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
     habits = db.query(models.HabitDB).filter(models.HabitDB.user_id == uid, models.HabitDB.is_active == True).all()
-    today_str = today_key()
+    today_str = today_key(date)
     result = []
     for h in habits:
         logs = db.query(models.HabitLogDB).filter(models.HabitLogDB.habit_id == h.id).all()
@@ -604,6 +606,10 @@ def get_habits(db: Session = Depends(get_db), uid: str = Depends(get_current_uid
         streak = 0
         if logged_dates:
             check_date = datetime.strptime(today_str, "%Y-%m-%d")
+            if today_str not in logged_dates:
+                # If not logged today, start checking from yesterday
+                check_date -= timedelta(days=1)
+            
             while True:
                 ds = check_date.strftime("%Y-%m-%d")
                 if ds in logged_dates:
@@ -644,12 +650,12 @@ def delete_habit(habit_id: str, db: Session = Depends(get_db), uid: str = Depend
     return {"status": "deleted"}
 
 @app.post("/api/habits/{habit_id}/log")
-def log_habit(habit_id: str, db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
+def log_habit(habit_id: str, date: Optional[str] = None, db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
     # Verify habit ownership
     h = db.query(models.HabitDB).filter(models.HabitDB.id == habit_id, models.HabitDB.user_id == uid).first()
     if not h:
         raise HTTPException(status_code=404, detail="Habit not found")
-    today_str = today_key()
+    today_str = today_key(date)
     existing = db.query(models.HabitLogDB).filter(
         models.HabitLogDB.habit_id == habit_id,
         models.HabitLogDB.logged_date == today_str
@@ -666,12 +672,12 @@ def log_habit(habit_id: str, db: Session = Depends(get_db), uid: str = Depends(g
     return {"status": "logged", "date": today_str}
 
 @app.delete("/api/habits/{habit_id}/log")
-def unlog_habit(habit_id: str, db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
+def unlog_habit(habit_id: str, date: Optional[str] = None, db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
     # Verify habit ownership
     h = db.query(models.HabitDB).filter(models.HabitDB.id == habit_id, models.HabitDB.user_id == uid).first()
     if not h:
         raise HTTPException(status_code=404, detail="Habit not found")
-    today_str = today_key()
+    today_str = today_key(date)
     db.query(models.HabitLogDB).filter(
         models.HabitLogDB.habit_id == habit_id,
         models.HabitLogDB.logged_date == today_str

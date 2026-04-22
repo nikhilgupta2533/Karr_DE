@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { auth } from '../lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 
@@ -26,16 +26,17 @@ export function useAuth() {
   }, []);
 
   // Call before any API request to get a fresh (auto-refreshed) token
-  const getFreshToken = async () => {
+  const getFreshToken = useCallback(async () => {
     if (!auth.currentUser) return null;
     try {
       const token = await auth.currentUser.getIdToken();
-      setIdToken(token);
+      // Only update if it actually changed to avoid unnecessary re-renders
+      setIdToken(prev => prev === token ? prev : token);
       return token;
     } catch {
       return null;
     }
-  };
+  }, []);
 
   const deleteAccount = async () => {
     if (!auth.currentUser) return;

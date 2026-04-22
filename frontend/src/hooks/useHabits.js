@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { getYYYYMMDD } from './useTasks';
 
 const API_HOST = (import.meta.env.VITE_API_URL || '').trim().replace(/\/$/, '');
 const HABITS_URL = API_HOST ? `${API_HOST}/api/habits` : '/api/habits';
@@ -20,7 +21,8 @@ export function useHabits(idToken = null, getFreshToken = null) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(HABITS_URL, { headers: await getHeaders() });
+      const dateStr = getYYYYMMDD(new Date());
+      const res = await fetch(`${HABITS_URL}?date=${dateStr}`, { headers: await getHeaders() });
       if (!res.ok) {
         if (res.status === 401) return;
         throw new Error('fetch failed');
@@ -66,7 +68,8 @@ export function useHabits(idToken = null, getFreshToken = null) {
   const logHabit = useCallback(async (id) => {
     setHabits(prev => prev.map(h => h.id === id ? { ...h, logged_today: true, streak: h.streak + 1 } : h));
     try {
-      await fetch(`${HABITS_URL}/${id}/log`, { method: 'POST', headers: await getHeaders() });
+      const dateStr = getYYYYMMDD(new Date());
+      await fetch(`${HABITS_URL}/${id}/log?date=${dateStr}`, { method: 'POST', headers: await getHeaders() });
     } catch {
       fetchHabits();
     }
@@ -75,7 +78,8 @@ export function useHabits(idToken = null, getFreshToken = null) {
   const unlogHabit = useCallback(async (id) => {
     setHabits(prev => prev.map(h => h.id === id ? { ...h, logged_today: false, streak: Math.max(0, h.streak - 1) } : h));
     try {
-      await fetch(`${HABITS_URL}/${id}/log`, { method: 'DELETE', headers: await getHeaders() });
+      const dateStr = getYYYYMMDD(new Date());
+      await fetch(`${HABITS_URL}/${id}/log?date=${dateStr}`, { method: 'DELETE', headers: await getHeaders() });
     } catch {
       fetchHabits();
     }

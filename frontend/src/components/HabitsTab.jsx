@@ -128,8 +128,21 @@ export function HabitsTab({ habitsHook }) {
   };
 
   const handleToggle = async (h) => {
-    if (h.logged_today) await unlogHabit(h.id);
-    else await logHabit(h.id);
+    const todayStr = getYYYYMMDD(new Date());
+    if (h.logged_today) {
+      await unlogHabit(h.id);
+      setHeatmapData(prev => {
+        if (!prev[h.id]) return prev;
+        return { ...prev, [h.id]: prev[h.id].filter(d => d !== todayStr) };
+      });
+    } else {
+      await logHabit(h.id);
+      setHeatmapData(prev => {
+        const existing = prev[h.id] || [];
+        if (existing.includes(todayStr)) return prev;
+        return { ...prev, [h.id]: [...existing, todayStr] };
+      });
+    }
   };
 
   return (
