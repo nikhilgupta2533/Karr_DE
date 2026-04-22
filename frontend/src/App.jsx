@@ -43,7 +43,7 @@ function SplashLoader() {
 }
 
 function App() {
-  const { user, idToken, loading: authLoading, getFreshToken } = useAuth();
+  const { user, idToken, loading: authLoading, getFreshToken, deleteAccount } = useAuth();
 
   // Theme (Feature 6)
   const [theme, setTheme] = useState(getInitialTheme);
@@ -64,7 +64,7 @@ function App() {
     tasks, addTask, toggleTask, deleteTask, togglePinTask,
     settings, setSettings, clearData,
     toast, confirmBulkComplete, updateTaskTitle, addTemplateTasks,
-    updateTaskDueTime, updateTask, decomposeTask, planDay,
+    updateTaskDueTime, updateTask, decomposeTask, planDay, toggleSubtask,
   } = useTasks(idToken, getFreshToken);
 
   const habitsHook = useHabits(idToken, getFreshToken);
@@ -123,6 +123,7 @@ function App() {
               onUpdateTask={updateTask}
               onDecomposeTask={decomposeTask}
               onPlanDay={(pending) => planDay(pending, missedPattern)}
+              onToggleSubtask={toggleSubtask}
               soundFns={soundFns}
               missedPattern={missedPattern}
             />
@@ -150,6 +151,7 @@ function App() {
         settings={settings}
         setSettings={setSettings}
         clearData={clearData}
+        deleteAccount={deleteAccount}
       />
 
       {/* Toast */}

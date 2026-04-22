@@ -23,6 +23,23 @@ export function SettingsModal({ show, onClose, settings, setSettings, clearData 
     }
   };
 
+  const handleDeleteAccount = async () => {
+    const msg = "DANGER: This will permanently delete your account and all your data. This cannot be undone. Proceed?";
+    if (confirm(msg)) {
+      try {
+        await deleteAccount();
+      } catch (err) {
+        if (err.message === 'SECURITY_REAUTH') {
+          alert("Security Check: Please sign out and sign back in again to delete your account. This is a security measure for sensitive actions.");
+        } else if (err.message.startsWith('BACKEND_ERROR:')) {
+          alert("Failed to delete data from server: " + err.message.replace('BACKEND_ERROR: ', '') + ". Please try again later.");
+        } else {
+          alert("An unexpected error occurred: " + err.message + ". Please try again.");
+        }
+      }
+    }
+  };
+
   return (
     <div className="modal-overlay">
       <div className="modal-box glass-panel">
@@ -56,7 +73,10 @@ export function SettingsModal({ show, onClose, settings, setSettings, clearData 
           Test Notifications
         </button>
 
-        <button className="btn-danger" onClick={handleClear}>Clear All Data</button>
+        <div className="settings-danger-zone">
+          <button className="btn-danger-outline" onClick={handleClear}>Clear All Data</button>
+          <button className="btn-danger" onClick={handleDeleteAccount}>Delete Account</button>
+        </div>
 
       </div>
     </div>

@@ -108,7 +108,6 @@ export function HabitsTab({ habitsHook }) {
   const [heatmapData, setHeatmapData] = useState({}); // habitId → date[]
   const [selectedHabit, setSelectedHabit] = useState(null);
 
-  useEffect(() => { fetchHabits(); }, []);
 
   // Load heatmap for selected habit
   useEffect(() => {

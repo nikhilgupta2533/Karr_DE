@@ -17,6 +17,7 @@ from backend.database import engine, Base, get_db
 from backend import models
 from dateutil.relativedelta import relativedelta
 import logging
+import asyncio
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -73,7 +74,7 @@ app = FastAPI()
 
 # ─── Firebase token verification ─────────────────────────────────────────────
 FIREBASE_PROJECT_ID = os.getenv("FIREBASE_PROJECT_ID", "karr-de-auth")
-FIREBASE_API_KEY    = os.getenv("FIREBASE_API_KEY",    "AIzaSyA4u0JJjQeYLe2k3FXJz5uCd53b6vMxa80")
+FIREBASE_API_KEY    = os.getenv("FIREBASE_API_KEY") # No hardcoded default for security
 
 # Simple in-memory cache: token -> (uid, expires_at)
 _token_cache: dict = {}
@@ -107,22 +108,39 @@ def _verify_token_sync(token: str) -> str:
         logger.warning(f"Firebase token verify failed: {str(exc)[:80]}")
         return "default"
 
-def get_current_uid(authorization: Optional[str] = Header(None)) -> str:
+    return uid
+
+async def get_current_uid(authorization: Optional[str] = Header(None)) -> str:
     """FastAPI dependency — extracts and verifies the Firebase Bearer token."""
-    if not authorization or not authorization.startswith("Bearer "):
-        return "default"
+    if not authorization:
+        # Strict mode: If a project ID is configured, we SHOULD require auth.
+        # But for local testing/backwards compatibility, we fallback to 'default'.
+        if not FIREBASE_PROJECT_ID or FIREBASE_PROJECT_ID == "karr-de-auth":
+            return "default"
+        raise HTTPException(status_code=401, detail="Authentication required")
+        
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization header format")
+        
     token = authorization.split(" ", 1)[1]
-    return _verify_token_sync(token)
+    # Run the blocking sync verification in a thread to keep the event loop free
+    uid = await asyncio.to_thread(_verify_token_sync, token)
+    
+    if uid == "default":
+        raise HTTPException(status_code=401, detail="Invalid or expired authentication token")
+        
+    return uid
 
 gemini_lock = threading.Lock()
 last_gemini_call_at = 0.0
 DAILY_AI_LIMIT = 900
 
 FALLBACK_MODELS = [
-    "models/gemini-2.5-flash",
-    "models/gemini-2.5-pro",
     "models/gemini-2.0-flash",
     "models/gemini-2.0-flash-lite",
+    "models/gemini-1.5-flash",
+    "models/gemini-1.5-flash-8b",
+    "models/gemini-1.5-pro",
 ]
 
 cors_origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
@@ -258,6 +276,10 @@ def call_gemini(api_key: str, system_prompt: str, user_prompt: str, db: Session)
             continue
     return None
 
+async def call_gemini_async(api_key: str, system_prompt: str, user_prompt: str, db: Session) -> Optional[str]:
+    """Wraps the blocking call_gemini in a thread."""
+    return await asyncio.to_thread(call_gemini, api_key, system_prompt, user_prompt, db)
+
 # ─── Root ─────────────────────────────────────────────────────────────────────
 
 @app.get("/")
@@ -312,7 +334,7 @@ def bulk_update_tasks(payload: List[models.TaskUpdateWithId], db: Session = Depe
 
 # NOTE: /decompose and /plan-day must be registered BEFORE /{task_id} routes
 @app.post("/api/tasks/decompose", response_model=models.DecomposeResponse)
-def decompose_task(payload: models.DecomposeRequest, x_api_key: Optional[str] = Header(None), db: Session = Depends(get_db)):
+async def decompose_task(payload: models.DecomposeRequest, x_api_key: Optional[str] = Header(None), db: Session = Depends(get_db)):
     api_key = x_api_key if x_api_key else os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise HTTPException(status_code=503, detail="No Gemini API key configured")
@@ -323,7 +345,7 @@ def decompose_task(payload: models.DecomposeRequest, x_api_key: Optional[str] = 
         "Respond ONLY with a JSON array of strings. No explanation, no markdown, no preamble. "
         'Example: ["Step one", "Step two", "Step three"]'
     )
-    result = call_gemini(api_key, system_prompt, payload.title, db)
+    result = await call_gemini_async(api_key, system_prompt, payload.title, db)
     if not result:
         raise HTTPException(status_code=503, detail="AI service unavailable")
     try:
@@ -340,7 +362,7 @@ def decompose_task(payload: models.DecomposeRequest, x_api_key: Optional[str] = 
         raise HTTPException(status_code=422, detail="AI returned invalid JSON. Please try again.")
 
 @app.post("/api/tasks/plan-day", response_model=models.PlanDayResponse)
-def plan_day(payload: models.PlanDayRequest, x_api_key: Optional[str] = Header(None), db: Session = Depends(get_db)):
+async def plan_day(payload: models.PlanDayRequest, x_api_key: Optional[str] = Header(None), db: Session = Depends(get_db)):
     api_key = x_api_key if x_api_key else os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise HTTPException(status_code=503, detail="No Gemini API key configured")
@@ -357,7 +379,7 @@ def plan_day(payload: models.PlanDayRequest, x_api_key: Optional[str] = Header(N
     current_time = payload.current_time or datetime.now().strftime("%I:%M %p")
     user_prompt = f"Tasks: {task_list}\nMy weakest day is usually {missed_day}.\nCurrent time: {current_time}"
 
-    result = call_gemini(api_key, system_prompt, user_prompt, db)
+    result = await call_gemini_async(api_key, system_prompt, user_prompt, db)
     if not result:
         raise HTTPException(status_code=503, detail="AI service unavailable")
     try:
@@ -371,7 +393,7 @@ def plan_day(payload: models.PlanDayRequest, x_api_key: Optional[str] = Header(N
         raise HTTPException(status_code=422, detail="AI returned invalid plan format. Please try again.")
 
 @app.post("/api/tasks", response_model=models.TaskResponse)
-def create_task(task: models.TaskCreate, x_api_key: Optional[str] = Header(None), db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
+async def create_task(task: models.TaskCreate, x_api_key: Optional[str] = Header(None), db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
     api_key_to_use = x_api_key if x_api_key else os.getenv("GEMINI_API_KEY")
     title = task.raw
     category = "Personal"
@@ -404,9 +426,16 @@ def create_task(task: models.TaskCreate, x_api_key: Optional[str] = Header(None)
             last_failure_reason = None
             for model_name in FALLBACK_MODELS:
                 try:
-                    enforce_gemini_spacing()
-                    model = genai.GenerativeModel(model_name=model_name, system_instruction=system_prompt)
-                    response = model.generate_content(task.raw)
+                    # We still run these in thread via call_gemini if we refactored,
+                    # but let's keep it simple here since it's already inside a loop.
+                    # Actually, let's wrap the whole loop logic in call_gemini_async style if possible.
+                    # For now, I'll just use asyncio.to_thread for the specific model call.
+                    def _call_single_model(m_name, s_prompt, u_prompt):
+                        enforce_gemini_spacing()
+                        model = genai.GenerativeModel(model_name=m_name, system_instruction=s_prompt)
+                        return model.generate_content(u_prompt)
+
+                    response = await asyncio.to_thread(_call_single_model, model_name, system_prompt, task.raw)
                     maybe_title = (response.text or "").strip().strip('"')
                     if maybe_title:
                         title = maybe_title
@@ -541,6 +570,24 @@ def clear_tasks(db: Session = Depends(get_db), uid: str = Depends(get_current_ui
     db.query(models.TaskDB).filter(models.TaskDB.user_id == uid).delete()
     db.commit()
     return {"status": "cleared"}
+
+@app.delete("/api/account")
+def delete_account(db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
+    if uid == "default":
+        raise HTTPException(status_code=400, detail="Cannot delete default account")
+    
+    # Delete tasks
+    db.query(models.TaskDB).filter(models.TaskDB.user_id == uid).delete()
+    
+    # Delete habits and their logs
+    habits = db.query(models.HabitDB).filter(models.HabitDB.user_id == uid).all()
+    habit_ids = [h.id for h in habits]
+    if habit_ids:
+        db.query(models.HabitLogDB).filter(models.HabitLogDB.habit_id.in_(habit_ids)).delete(synchronize_session=False)
+    db.query(models.HabitDB).filter(models.HabitDB.user_id == uid).delete()
+    
+    db.commit()
+    return {"status": "account_data_deleted"}
 
 # ─── Habit Endpoints ──────────────────────────────────────────────────────────
 

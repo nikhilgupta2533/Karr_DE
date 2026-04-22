@@ -37,5 +37,39 @@ export function useAuth() {
     }
   };
 
-  return { user, idToken, loading: user === undefined, getFreshToken };
+  const deleteAccount = async () => {
+    if (!auth.currentUser) return;
+    try {
+      const token = await getFreshToken();
+      const API_HOST = (import.meta.env.VITE_API_URL || '').trim().replace(/\/$/, '');
+      const url = API_HOST ? `${API_HOST}/api/account` : '/api/account';
+      
+      // 1. Delete backend data FIRST
+      const res = await fetch(url, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(`BACKEND_ERROR: ${errData.detail || res.statusText}`);
+      }
+
+      // 2. Delete Firebase account
+      try {
+        await auth.currentUser.delete();
+      } catch (fbErr) {
+        if (fbErr.code === 'auth/requires-recent-login') {
+          throw new Error('SECURITY_REAUTH');
+        }
+        throw fbErr;
+      }
+      
+    } catch (err) {
+      console.error('Delete account error:', err);
+      throw err;
+    }
+  };
+
+  return { user, idToken, loading: user === undefined, getFreshToken, deleteAccount };
 }

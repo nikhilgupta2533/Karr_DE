@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 const API_HOST = (import.meta.env.VITE_API_URL || '').trim().replace(/\/$/, '');
 const HABITS_URL = API_HOST ? `${API_HOST}/api/habits` : '/api/habits';
@@ -16,11 +16,15 @@ export function useHabits(idToken = null, getFreshToken = null) {
   };
 
   const fetchHabits = useCallback(async () => {
+    if (!idToken) return;
     setLoading(true);
     setError(null);
     try {
       const res = await fetch(HABITS_URL, { headers: await getHeaders() });
-      if (!res.ok) throw new Error('fetch failed');
+      if (!res.ok) {
+        if (res.status === 401) return;
+        throw new Error('fetch failed');
+      }
       const data = await res.json();
       setHabits(data);
     } catch (e) {
@@ -28,7 +32,12 @@ export function useHabits(idToken = null, getFreshToken = null) {
     } finally {
       setLoading(false);
     }
-  }, [idToken]);
+  }, [idToken, getFreshToken]);
+
+  // Auto-fetch on mount or when token changes
+  useEffect(() => {
+    if (idToken) fetchHabits();
+  }, [idToken, fetchHabits]);
 
   const addHabit = useCallback(async (name, icon = '⭐') => {
     try {

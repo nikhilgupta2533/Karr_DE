@@ -79,16 +79,30 @@ export function useTasks(idToken = null, getFreshToken = null) {
 
   // ─── Fetch ───────────────────────────────────────────────────────────────
   const fetchTasks = useCallback(async () => {
+    // If we have no token and we expect one (auth is not explicitly null/guest), 
+    // we wait until idToken is available. 
+    // Note: idToken will be null initially and then set by useAuth.
+    if (!idToken) return;
+
     try {
       const headers = {};
       const token = getFreshToken ? await getFreshToken() : idToken;
       if (token) headers['Authorization'] = `Bearer ${token}`;
+      
       const res = await fetch(API_URL, { headers });
-      if (!res.ok) throw new Error('fetch failed');
+      if (!res.ok) {
+        if (res.status === 401) {
+          // Token might be expired or invalid, don't overwrite cache with "default" data
+          return;
+        }
+        throw new Error('fetch failed');
+      }
+      
       const data = await res.json();
       const hydrated = hydratePinnedState(data);
       setTasks(hydrated);
       localStorage.setItem(CACHE_KEY, JSON.stringify(hydrated));
+      
       // schedule notifications for today's pending tasks
       if (Notification.permission === 'granted') {
         hydrated.forEach(t => {
@@ -100,9 +114,11 @@ export function useTasks(idToken = null, getFreshToken = null) {
     } catch {
       showToast('Backend connection failed. Using cached data.');
     }
-  }, [hydratePinnedState]);
+  }, [hydratePinnedState, idToken, getFreshToken]);
 
-  useEffect(() => { fetchTasks(); }, [fetchTasks]);
+  useEffect(() => { 
+    if (idToken) fetchTasks(); 
+  }, [fetchTasks, idToken]);
   useEffect(() => {
     try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings || { apiKey: '' })); } catch {}
   }, [settings]);
@@ -341,11 +357,25 @@ export function useTasks(idToken = null, getFreshToken = null) {
     }
   };
 
+  // Toggle a single subtask (Feature 1 refinement)
+  const toggleSubtask = async (taskId, subtaskIndex) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task || !task.subtasks) return;
+    try {
+      const steps = JSON.parse(task.subtasks);
+      steps[subtaskIndex].done = !steps[subtaskIndex].done;
+      const newSubtasks = JSON.stringify(steps);
+      await updateTask(taskId, { subtasks: newSubtasks });
+    } catch (e) {
+      console.error('Failed to toggle subtask', e);
+    }
+  };
+
   return {
     tasks, addTask, toggleTask, deleteTask, togglePinTask,
     settings, setSettings, toast, bulkCompleteToday,
     updateTaskTitle, addTemplateTasks, updateTaskDueTime,
-    updateTask, decomposeTask, planDay,
+    updateTask, decomposeTask, planDay, toggleSubtask,
     fetchTasks,
     clearData: async () => {
       if (confirm('Clear all?')) {

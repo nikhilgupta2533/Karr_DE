@@ -182,9 +182,13 @@
   background: hsla(270,100%,65%,0.15);
   border: 1px solid hsla(270,100%,65%,0.3);
   border-radius: 20px;
-  padding: 2px 8px;
-  letter-spacing: 0.5px;
+  padding: 1px 6px;
+  letter-spacing: 1px;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  transform: translateY(-1px);
 }
 
 /* ── Subtasks ──────────────────────────────────────────────────────────── */
@@ -228,7 +232,13 @@
 .subtask-checkbox { accent-color: var(--accent-1); cursor: pointer; width: 14px; height: 14px; }
 
 /* ── Meta ──────────────────────────────────────────────────────────────── */
-.task-meta { display: inline-flex; align-items: center; gap: 8px; margin-top: 2px; }
+.task-meta { 
+  display: flex; 
+  align-items: center; 
+  gap: 6px; 
+  margin-top: 4px; 
+  flex-wrap: wrap;
+}
 .task-meta-item {
   display: flex; align-items: center; gap: 6px;
   font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;

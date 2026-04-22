@@ -17,7 +17,7 @@ const TEMPLATE_OPTIONS = [
 export function TodayTab({
   tasks, onAddTask, onToggleTask, onDeleteTask, onTogglePinTask,
   onBulkComplete, onUpdateTitle, onAddTemplate, onUpdateDueTime,
-  onUpdateTask, onDecomposeTask, onPlanDay, soundFns, missedPattern,
+  onUpdateTask, onDecomposeTask, onPlanDay, onToggleSubtask, soundFns, missedPattern,
 }) {
   const [inputVal,       setInputVal]       = useState('');
   const [recurrence,     setRecurrence]     = useState('none');
@@ -408,6 +408,9 @@ export function TodayTab({
 
           <div className="zen-timer-wrap">
             <div className={`zen-timer ${zenActive ? 'pulse' : ''}`}>{formatZenTime(zenTime)}</div>
+            <div className="focus-counter">
+              Task {focusIndex + 1} of {focusTasks.length}
+            </div>
             <button
               type="button"
               className="zen-toggle magnetic-btn"
@@ -432,9 +435,13 @@ export function TodayTab({
                   if (st.length) return (
                     <div className="focus-subtasks">
                       {st.map((s, i) => (
-                        <div key={i} className={`focus-subtask-item ${s.done ? 'done' : ''}`}>
-                          <span>{s.done ? '✓' : '○'}</span>
-                          <span>{s.text || s}</span>
+                        <div 
+                          key={i} 
+                          className={`focus-subtask-item ${s.done ? 'done' : ''}`}
+                          onClick={() => onToggleSubtask(activeFocusTask.id, i)}
+                        >
+                          <span className="focus-subtask-check">{s.done ? '✓' : '○'}</span>
+                          <span className="focus-subtask-text">{s.text || s}</span>
                         </div>
                       ))}
                     </div>

@@ -34,3 +34,6 @@ pnpm-debug.log*
 .idea/
 *.sublime-project
 *.sublime-workspace
+
+# Project documentation
+PROJECT_DESCRIPTION.md
