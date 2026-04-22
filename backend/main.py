@@ -10,8 +10,8 @@ from dotenv import load_dotenv, find_dotenv
 from typing import List, Optional
 from datetime import datetime, timezone, timedelta
 from uuid import uuid4
-from .database import engine, Base, get_db
-from . import models
+from backend.database import engine, Base, get_db
+from backend import models
 from dateutil.relativedelta import relativedelta
 import logging
 
