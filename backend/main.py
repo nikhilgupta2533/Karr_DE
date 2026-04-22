@@ -22,21 +22,23 @@ logger = logging.getLogger(__name__)
 # Re-create tables if not exists
 Base.metadata.create_all(bind=engine)
 
-# Lightweight migration for existing SQLite DBs.
-with engine.connect() as conn:
-    cols = [row[1] for row in conn.execute(text("PRAGMA table_info(tasks)")).fetchall()]
-    if "is_pinned" not in cols:
-        conn.execute(text("ALTER TABLE tasks ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0"))
-        conn.commit()
-    if "is_recurring" not in cols:
-        conn.execute(text("ALTER TABLE tasks ADD COLUMN is_recurring INTEGER NOT NULL DEFAULT 0"))
-        conn.commit()
-    if "recurrence" not in cols:
-        conn.execute(text("ALTER TABLE tasks ADD COLUMN recurrence TEXT"))
-        conn.commit()
-    if "due_time" not in cols:
-        conn.execute(text("ALTER TABLE tasks ADD COLUMN due_time TEXT"))
-        conn.commit()
+# Lightweight migration - only for SQLite
+db_url = os.getenv("DATABASE_URL", "sqlite:///./karde_tasks.db")
+if "sqlite" in db_url:
+    with engine.connect() as conn:
+        cols = [row[1] for row in conn.execute(text("PRAGMA table_info(tasks)")).fetchall()]
+        if "is_pinned" not in cols:
+            conn.execute(text("ALTER TABLE tasks ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0"))
+            conn.commit()
+        if "is_recurring" not in cols:
+            conn.execute(text("ALTER TABLE tasks ADD COLUMN is_recurring INTEGER NOT NULL DEFAULT 0"))
+            conn.commit()
+        if "recurrence" not in cols:
+            conn.execute(text("ALTER TABLE tasks ADD COLUMN recurrence TEXT"))
+            conn.commit()
+        if "due_time" not in cols:
+            conn.execute(text("ALTER TABLE tasks ADD COLUMN due_time TEXT"))
+            conn.commit()
 
 # Load env vars deterministically regardless of cwd.
 # - Prefer a repo/root `.env` if present (find_dotenv)
