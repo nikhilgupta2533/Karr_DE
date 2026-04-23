@@ -129,7 +129,7 @@ export function TodayTab({
   // ── Submit form ───────────────────────────────────────────────────────────
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!inputVal.trim()) return;
+    if (!inputVal.trim() || decomposing) return;
     const approvedSteps = decomposeSteps.filter(s => s.checked).map(s => ({ text: s.text, done: false }));
     const subtasks = approvedSteps.length > 0 ? JSON.stringify(approvedSteps) : null;
     onAddTask(inputVal.trim(), {
@@ -313,7 +313,7 @@ export function TodayTab({
               )}
             </div>
 
-            <button type="submit" disabled={!inputVal.trim()} className="add-btn magnetic-btn">
+            <button type="submit" disabled={!inputVal.trim() || decomposing} className="add-btn magnetic-btn">
               <ArrowUp size={24} strokeWidth={3} />
             </button>
           </div>

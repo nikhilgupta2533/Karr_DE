@@ -24,6 +24,7 @@
   /* Standard Easing */
   --ease-soft: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --icon-invert: 1;
 }
 
 /* ─── Light Theme Overrides ──────────────────────────────────────────────── */
@@ -39,6 +40,7 @@
   --accent-2:             #8833cc;
   --danger:               #cc1144;
   --success:              #009955;
+  --icon-invert:          0;
 }
 
 :root[data-theme="light"] body {
@@ -214,8 +216,8 @@ body {
 /* ─── Print / PDF Export ────────────────────────────────────────────────── */
 @media print {
   body {
-    background: #ffffff !important;
-    color: #111111 !important;
+    background: var(--bg-body) !important;
+    color: var(--text-light) !important;
     font-family: Georgia, 'Times New Roman', serif !important;
   }
 
@@ -232,8 +234,8 @@ body {
     padding: 24px !important;
     max-width: 100% !important;
     font-family: Georgia, serif !important;
-    color: #111 !important;
-    background: #fff !important;
+    color: var(--text-light) !important;
+    background: var(--bg-body) !important;
   }
 
   #karde-print-report h2 { page-break-before: auto; }

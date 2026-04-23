@@ -136,7 +136,10 @@ export function useTasks(idToken = null, getFreshToken = null) {
 
   // ─── Headers ─────────────────────────────────────────────────────────────
   const getHeaders = async () => {
-    const h = { 'Content-Type': 'application/json' };
+    const h = { 
+      'Content-Type': 'application/json',
+      'X-Local-Date': getYYYYMMDD(new Date())
+    };
     if (settings.apiKey) h['x-api-key'] = settings.apiKey;
     // Always use a fresh token so it auto-refreshes after expiry
     const token = getFreshToken ? await getFreshToken() : idToken;
@@ -216,7 +219,13 @@ export function useTasks(idToken = null, getFreshToken = null) {
     }
   };
 
+  const lastAddRef = useRef(0);
+
   const addTask = async (rawString, options = {}) => {
+    const now = Date.now();
+    if (now - lastAddRef.current < 300) return; // Debounce 300ms
+    lastAddRef.current = now;
+
     if (options.skip_duplicate_check) { await saveTask(rawString, options); return; }
     const dup = getDuplicateTask(rawString);
     if (!dup) { await saveTask(rawString, options); return; }

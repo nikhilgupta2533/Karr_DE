@@ -15,7 +15,7 @@
 .focus-btn {
   background: var(--bg-glass);
   border: 1px solid var(--glass-border);
-  color: hsla(180, 100%, 50%, 0.8);
+  color: var(--accent-1);
   border-radius: 12px;
   padding: 8px 16px;
   display: flex;
@@ -30,7 +30,7 @@
 }
 
 .focus-btn:hover {
-  background: hsla(180, 100%, 50%, 0.05);
+  background: var(--bg-glass-hover);
   border-color: var(--accent-1);
   color: var(--accent-1);
   box-shadow: 0 0 20px hsla(180, 100%, 50%, 0.1);
@@ -118,7 +118,7 @@
 }
 
 .mini-icon-btn {
-  background: hsla(0, 0%, 100%, 0.05);
+  background: var(--bg-glass);
   border: 1px solid var(--glass-border);
   color: var(--text-muted);
   width: 34px;
@@ -133,13 +133,13 @@
 }
 
 .mini-icon-btn:hover, .mini-icon-btn.active {
-  background: hsla(0, 0%, 100%, 0.1);
+  background: var(--bg-glass-hover);
   color: var(--text-light);
   border-color: var(--glass-border-bright);
 }
 
 .recurrence-select {
-  background: hsla(0, 0%, 100%, 0.05);
+  background: var(--bg-glass);
   color: var(--text-light);
   border: 1px solid var(--glass-border);
   border-radius: 100px;
@@ -156,8 +156,8 @@
 }
 
 .recurrence-select option {
-  background: #0d0a1a;
-  color: #fff;
+  background: var(--bg-body);
+  color: var(--text-light);
 }
 
 .recurrence-select:hover {
@@ -167,7 +167,7 @@
 
 .due-time-input {
   flex: 1;
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--bg-glass);
   border: 1px solid var(--glass-border);
   color: var(--accent-1);
   border-radius: 100px;
@@ -179,14 +179,14 @@
 }
 
 .due-time-input::-webkit-calendar-picker-indicator {
-  filter: invert(1);
+  filter: invert(var(--icon-invert));
   opacity: 0.5;
   cursor: pointer;
 }
 
 .add-btn {
   background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
-  color: #05020a;
+  color: var(--bg-body);
   border: none;
   width: 38px;
   height: 38px;
@@ -208,8 +208,8 @@
 
 
 .add-btn:disabled {
-  background: hsla(0, 0%, 100%, 0.05);
-  color: hsla(0, 0%, 100%, 0.2);
+  background: var(--bg-glass);
+  color: var(--text-muted);
   cursor: not-allowed;
   box-shadow: none;
 }
@@ -437,7 +437,7 @@
   color: var(--accent-1);
   text-transform: uppercase;
   letter-spacing: 2px;
-  background: hsla(180, 100%, 50%, 0.1);
+  background: var(--bg-glass-hover);
   padding: 4px 12px;
   border-radius: 100px;
   margin-bottom: 10px;
@@ -564,7 +564,7 @@
 .plan-item-reason { font-size: 12px; color: var(--text-muted); font-style: italic; margin-top: 2px; }
 .plan-start-btn {
   background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
-  color: #05020a;
+  color: var(--bg-body);
   border: none;
   padding: 6px 14px;
   border-radius: 20px;

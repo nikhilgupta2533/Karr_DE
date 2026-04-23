@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTasks } from './hooks/useTasks';
 import { useHabits } from './hooks/useHabits';
-import { useSound } from './hooks/useSound';
+import { useSound, closeAudioContext } from './hooks/useSound';
 import { useAuth } from './hooks/useAuth';
 import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
@@ -72,7 +72,10 @@ function App() {
   useEffect(() => {
     const onOpenSettings = () => setShowSettings(true);
     window.addEventListener('karde:open-settings', onOpenSettings);
-    return () => window.removeEventListener('karde:open-settings', onOpenSettings);
+    return () => {
+      window.removeEventListener('karde:open-settings', onOpenSettings);
+      closeAudioContext();
+    };
   }, []);
 
   // PWA: register service worker (handles offline + PWA install prompt)

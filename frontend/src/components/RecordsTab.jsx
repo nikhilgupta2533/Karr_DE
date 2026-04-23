@@ -46,7 +46,7 @@ function generatePrintReport({ tasks, current, best, rate, completedTotal, today
   const sorted = [...tasks].sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt));
 
   const html = `
-    <div id="karde-print-report" style="display:none; font-family: Georgia, serif; color: #111; background: #fff; padding: 40px; max-width: 900px; margin: 0 auto;">
+    <div id="karde-print-report" style="display:none; font-family: Georgia, serif; color: var(--text-light); background: var(--bg-body); padding: 40px; max-width: 900px; margin: 0 auto;">
       <h1 style="font-size:32px; margin:0 0 4px;">Kar De — Productivity Report</h1>
       <p style="color:#555; margin:0 0 32px;">Exported: ${today.toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}</p>
       <hr style="border:1px solid #eee; margin-bottom:32px;"/>
@@ -197,7 +197,8 @@ export function RecordsTab({ tasks }) {
     try {
       const node = document.getElementById('records-stats-share');
       if (!node) return;
-      const canvas = await html2canvas(node, { backgroundColor:'#120d1d', scale:2, useCORS:true });
+      const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--bg-body').trim() || '#120d1d';
+      const canvas = await html2canvas(node, { backgroundColor: bgColor, scale: 2, useCORS: true });
       canvas.toBlob(async (blob) => {
         if (!blob) return;
         const file = new File([blob], 'kar-de-stats.png', { type:'image/png' });

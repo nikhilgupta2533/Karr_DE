@@ -45,7 +45,7 @@
 .edit-title-input {
   flex: 1;
   min-width: 120px;
-  background: hsla(0,0%,100%,0.05);
+  background: var(--bg-glass);
   border: 1px solid var(--accent-1);
   border-radius: 10px;
   color: var(--text-light);
@@ -78,7 +78,7 @@
 .edit-ai-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .edit-select {
-  background: hsla(0,0%,100%,0.05);
+  background: var(--bg-glass);
   border: 1px solid var(--glass-border);
   border-radius: 20px;
   color: var(--text-light);
@@ -94,9 +94,9 @@
 }
 .edit-select:hover {
   border-color: var(--accent-1);
-  background: hsla(0,0%,100%,0.1);
+  background: var(--bg-glass-hover);
 }
-.edit-select option { background: #0d0a1a; color: #fff; }
+.edit-select option { background: var(--bg-body); color: var(--text-light); }
 
 .edit-time-label {
   display: flex;
@@ -107,7 +107,7 @@
   font-weight: 600;
 }
 .edit-time-input {
-  background: rgba(0,0,0,0.4);
+  background: var(--bg-glass);
   border: 1px solid var(--glass-border);
   color: var(--accent-1);
   border-radius: 20px;
@@ -117,7 +117,7 @@
   outline: none;
 }
 .edit-time-input::-webkit-calendar-picker-indicator {
-  filter: invert(1); opacity: 0.5; cursor: pointer;
+  filter: invert(var(--icon-invert)); opacity: 0.5; cursor: pointer;
 }
 
 .edit-form-actions {
@@ -126,7 +126,7 @@
 }
 .edit-save-btn {
   background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
-  color: #05020a;
+  color: var(--bg-body);
   border: none;
   padding: 8px 22px;
   border-radius: 20px;
@@ -138,7 +138,7 @@
 }
 .edit-save-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 14px hsla(180,100%,50%,0.3); }
 .edit-cancel-btn {
-  background: hsla(0,0%,100%,0.05);
+  background: var(--bg-glass);
   border: 1px solid var(--glass-border);
   color: var(--text-muted);
   padding: 8px 18px;
@@ -150,7 +150,7 @@
 
 /* ── Check button ──────────────────────────────────────────────────────── */
 .check-btn {
-  background: hsla(0,0%,100%,0.05);
+  background: var(--bg-glass);
   border: 1px solid var(--glass-border);
   width: 32px; height: 32px;
   border-radius: 50%;
@@ -201,7 +201,7 @@
 .subtask-progress-bar {
   flex: 1;
   height: 3px;
-  background: hsla(0,0%,100%,0.07);
+  background: var(--bg-glass);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -243,7 +243,7 @@
   display: flex; align-items: center; gap: 6px;
   font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;
   color: var(--text-muted);
-  background: hsla(0,0%,100%,0.05);
+  background: var(--bg-glass);
   padding: 4px 10px; border-radius: 20px; border: 1px solid var(--glass-border);
   font-weight: 700;
 }
@@ -270,7 +270,7 @@
 /* ── Other inputs ──────────────────────────────────────────────────────── */
 .task-title-input {
   width: 100%;
-  background: hsla(0,0%,100%,0.05);
+  background: var(--bg-glass);
   border: 1px solid var(--accent-1);
   border-radius: 10px;
   color: var(--text-light);
@@ -279,7 +279,7 @@
   box-shadow: 0 0 15px hsla(180,100%,50%,0.1);
 }
 .task-inline-time {
-  background: rgba(0,0,0,0.4);
+  background: var(--bg-glass);
   border: 1px solid var(--accent-1);
   color: var(--accent-1);
   border-radius: 8px;
@@ -287,7 +287,7 @@
   font-family: 'Space Mono', monospace;
   font-size: 11px; outline: none; margin-top: 4px;
 }
-.task-inline-time::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.5; cursor: pointer; }
+.task-inline-time::-webkit-calendar-picker-indicator { filter: invert(var(--icon-invert)); opacity: 0.5; cursor: pointer; }
 
 /* ── Skeleton ──────────────────────────────────────────────────────────── */
 .skeleton-block { width: 100%; display: flex; flex-direction: column; gap: 12px; }

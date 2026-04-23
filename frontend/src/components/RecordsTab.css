@@ -31,7 +31,7 @@
 .export-btn:hover {
   color: var(--accent-1);
   border-color: var(--accent-1);
-  background: hsla(180,100%,50%,0.06);
+  background: var(--bg-glass-hover);
 }
 
 .records-stats-header h3 {
@@ -57,7 +57,7 @@
 }
 
 .share-stats-btn:hover {
-  background: hsla(180, 100%, 50%, 0.1);
+  background: var(--bg-glass-hover);
   border-color: var(--accent-1);
   box-shadow: 0 0 15px hsla(180, 100%, 50%, 0.1);
 }
@@ -243,7 +243,7 @@
 }
 
 .clear-search-btn {
-  background: hsla(0, 0%, 100%, 0.06);
+  background: var(--bg-glass);
   border: 1px solid var(--glass-border);
   color: var(--text-muted);
   border-radius: 50%;

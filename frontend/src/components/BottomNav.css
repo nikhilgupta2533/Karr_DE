@@ -4,7 +4,7 @@
   width: 100%;
   max-width: 500px;
   height: var(--nav-height);
-  background: hsla(255, 40%, 4%, 0.85);
+  background: var(--bg-glass);
   backdrop-filter: blur(32px) saturate(200%);
   -webkit-backdrop-filter: blur(32px) saturate(200%);
   display: flex;

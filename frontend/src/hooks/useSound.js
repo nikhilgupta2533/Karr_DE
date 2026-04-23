@@ -72,3 +72,10 @@ export function playSubtaskTick() {
 export function useSound() {
   return { playComplete, playMissed, playZenEnd, playSubtaskTick };
 }
+
+export function closeAudioContext() {
+  if (window._kardeAudioCtx && window._kardeAudioCtx.state !== 'closed') {
+    window._kardeAudioCtx.close().catch(() => {});
+    window._kardeAudioCtx = null;
+  }
+}

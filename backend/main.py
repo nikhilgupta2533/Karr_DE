@@ -18,6 +18,8 @@ from backend import models
 from dateutil.relativedelta import relativedelta
 import logging
 import asyncio
+from backend.ai import call_gemini_async, validate_and_repair_json
+from backend.prompts import task_parser_prompt, task_decompose_prompt, daily_planner_prompt
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -131,17 +133,7 @@ async def get_current_uid(authorization: Optional[str] = Header(None)) -> str:
         
     return uid
 
-gemini_lock = threading.Lock()
-last_gemini_call_at = 0.0
-DAILY_AI_LIMIT = 900
-
-FALLBACK_MODELS = [
-    "models/gemini-2.0-flash",
-    "models/gemini-2.0-flash-lite",
-    "models/gemini-1.5-flash",
-    "models/gemini-1.5-flash-8b",
-    "models/gemini-1.5-pro",
-]
+# Removed inline Gemini variables (now in backend.ai)
 
 cors_origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
 extra_origins = os.getenv("CORS_ORIGINS")
@@ -168,28 +160,7 @@ def guess_category(title: str) -> str:
         return 'Home'
     return 'Personal'
 
-def today_key(override: Optional[str] = None) -> str:
-    if override:
-        return override
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
-
-def get_or_create_usage_row(db: Session, day: str) -> models.AIUsageDB:
-    row = db.query(models.AIUsageDB).filter(models.AIUsageDB.day_key == day).first()
-    if row:
-        return row
-    row = models.AIUsageDB(day_key=day, count=0)
-    db.add(row)
-    db.commit()
-    db.refresh(row)
-    return row
-
-def enforce_gemini_spacing():
-    global last_gemini_call_at
-    with gemini_lock:
-        elapsed = time.time() - last_gemini_call_at
-        if elapsed < 0.3:
-            time.sleep(0.3 - elapsed)
-        last_gemini_call_at = time.time()
+# Helpers migrated to backend.ai: today_key, get_or_create_usage_row, enforce_gemini_spacing
 
 def serialize_task(row: models.TaskDB, ai_failed: bool = False, ai_failure_reason: Optional[str] = None):
     setattr(row, "ai_failed", ai_failed)
@@ -198,15 +169,19 @@ def serialize_task(row: models.TaskDB, ai_failed: bool = False, ai_failure_reaso
     setattr(row, "is_recurring", bool(row.is_recurring))
     return row
 
-def get_next_recurrence_date(recurrence: Optional[str]) -> str:
-    now = datetime.utcnow()
+def get_next_recurrence_date(recurrence: Optional[str], base_date_str: str) -> str:
+    try:
+        base_date = datetime.strptime(base_date_str.split("T")[0], "%Y-%m-%d")
+    except Exception:
+        base_date = datetime.utcnow()
+        
     if recurrence == "weekly":
-        next_dt = now + relativedelta(weeks=1)
+        next_dt = base_date + relativedelta(weeks=1)
     elif recurrence == "monthly":
-        next_dt = now + relativedelta(months=1)
+        next_dt = base_date + relativedelta(months=1)
     else:
-        next_dt = now + relativedelta(days=1)
-    return next_dt.isoformat() + "Z"
+        next_dt = base_date + relativedelta(days=1)
+    return next_dt.strftime("%Y-%m-%dT00:00:00Z")
 
 def normalized_recurrence(raw: Optional[str]) -> Optional[str]:
     if raw is None:
@@ -229,7 +204,7 @@ def spawn_next_recurring_task(db: Session, source: models.TaskDB, previous_statu
         return
     if previous_status is not None and previous_status != "pending":
         return
-    next_date = get_next_recurrence_date(source.recurrence)
+    next_date = get_next_recurrence_date(source.recurrence, source.addedAt)
     next_date_d = next_date.split("T")[0]
     existing = db.query(models.TaskDB).filter(
         models.TaskDB.raw == source.raw,
@@ -254,33 +229,7 @@ def spawn_next_recurring_task(db: Session, source: models.TaskDB, previous_statu
     )
     db.add(next_task)
 
-def call_gemini(api_key: str, system_prompt: str, user_prompt: str, db: Session) -> Optional[str]:
-    """Call Gemini with fallback. Returns text or None on failure."""
-    current_day = today_key()
-    usage_row = get_or_create_usage_row(db, current_day)
-    # Only enforce server-side limit if using the default server API key
-    is_default_key = (api_key == os.getenv("GEMINI_API_KEY"))
-    if is_default_key and usage_row.count >= DAILY_AI_LIMIT:
-        return None
-    genai.configure(api_key=api_key)
-    for model_name in FALLBACK_MODELS:
-        try:
-            enforce_gemini_spacing()
-            model = genai.GenerativeModel(model_name=model_name, system_instruction=system_prompt)
-            response = model.generate_content(user_prompt)
-            text_out = (response.text or "").strip()
-            if text_out:
-                usage_row.count += 1
-                db.commit()
-                return text_out
-        except Exception as exc:
-            logger.warning(f"Model {model_name} failed: {str(exc)[:120]}")
-            continue
-    return None
-
-async def call_gemini_async(api_key: str, system_prompt: str, user_prompt: str, db: Session) -> Optional[str]:
-    """Wraps the blocking call_gemini in a thread."""
-    return await asyncio.to_thread(call_gemini, api_key, system_prompt, user_prompt, db)
+# call_gemini migrated to backend.ai
 
 # ─── Root ─────────────────────────────────────────────────────────────────────
 
@@ -291,9 +240,8 @@ def read_root():
 # ─── Task Endpoints ───────────────────────────────────────────────────────────
 
 @app.get("/api/tasks", response_model=List[models.TaskResponse])
-def get_tasks(db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
-    now_utc = datetime.now(timezone.utc)
-    today_str = now_utc.strftime("%Y-%m-%d")
+def get_tasks(db: Session = Depends(get_db), uid: str = Depends(get_current_uid), x_local_date: Optional[str] = Header(None)):
+    today_str = x_local_date if x_local_date else datetime.now(timezone.utc).strftime("%Y-%m-%d")
     q = db.query(models.TaskDB).filter(models.TaskDB.user_id == uid)
     all_pending = q.filter(models.TaskDB.status == "pending").all()
     any_changed = False
@@ -336,66 +284,47 @@ def bulk_update_tasks(payload: List[models.TaskUpdateWithId], db: Session = Depe
 
 # NOTE: /decompose and /plan-day must be registered BEFORE /{task_id} routes
 @app.post("/api/tasks/decompose", response_model=models.DecomposeResponse)
-async def decompose_task(payload: models.DecomposeRequest, x_api_key: Optional[str] = Header(None), db: Session = Depends(get_db)):
+async def decompose_task(payload: models.DecomposeRequest, x_api_key: Optional[str] = Header(None), x_local_date: Optional[str] = Header(None), db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
     api_key = x_api_key if x_api_key else os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise HTTPException(status_code=503, detail="No Gemini API key configured")
 
-    system_prompt = (
-        "You are a productivity assistant. The user will give you a task in English or Hinglish. "
-        "Break it into 3 to 5 small, specific, actionable sub-steps. "
-        "Respond ONLY with a JSON array of strings. No explanation, no markdown, no preamble. "
-        'Example: ["Step one", "Step two", "Step three"]'
-    )
-    result = await call_gemini_async(api_key, system_prompt, payload.title, db)
+    system_prompt, user_prompt = task_decompose_prompt(payload.title)
+    local_date = x_local_date if x_local_date else datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    
+    result, error_reason = await call_gemini_async(api_key, system_prompt, user_prompt, db, uid, local_date)
     if not result:
-        raise HTTPException(status_code=503, detail="AI service unavailable")
+        raise HTTPException(status_code=503, detail=f"AI service unavailable: {error_reason}")
     try:
-        # Strip markdown code fences if present
-        cleaned = result.strip().strip('`').strip()
-        if cleaned.startswith("json"):
-            cleaned = cleaned[4:].strip()
-        steps = json.loads(cleaned)
-        if not isinstance(steps, list):
-            raise ValueError("Not a list")
+        steps = validate_and_repair_json(result, list)
         steps = [str(s) for s in steps if s]
         return models.DecomposeResponse(steps=steps[:5])
     except Exception:
         raise HTTPException(status_code=422, detail="AI returned invalid JSON. Please try again.")
 
 @app.post("/api/tasks/plan-day", response_model=models.PlanDayResponse)
-async def plan_day(payload: models.PlanDayRequest, x_api_key: Optional[str] = Header(None), db: Session = Depends(get_db)):
+async def plan_day(payload: models.PlanDayRequest, x_api_key: Optional[str] = Header(None), x_local_date: Optional[str] = Header(None), db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
     api_key = x_api_key if x_api_key else os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise HTTPException(status_code=503, detail="No Gemini API key configured")
 
-    system_prompt = (
-        "You are a smart productivity coach. The user will give you their pending tasks for today "
-        "and some context about their productivity patterns. Suggest the optimal order to complete "
-        "these tasks with a one-line reason for each. Be concise, motivating, and realistic. "
-        "Respond ONLY in this JSON format with no extra text:\n"
-        '{"message": "One encouraging sentence", "plan": [{"task_id": "id", "order": 1, "reason": "reason"}]}'
-    )
-    task_list = ", ".join([f"[{t.get('id','')}] {t.get('title', t.get('raw',''))}" for t in payload.tasks])
     missed_day = payload.missed_pattern or "unknown"
     current_time = payload.current_time or datetime.now().strftime("%I:%M %p")
-    user_prompt = f"Tasks: {task_list}\nMy weakest day is usually {missed_day}.\nCurrent time: {current_time}"
+    system_prompt, user_prompt = daily_planner_prompt(payload.tasks, current_time, missed_day)
+    local_date = x_local_date if x_local_date else datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
-    result = await call_gemini_async(api_key, system_prompt, user_prompt, db)
+    result, error_reason = await call_gemini_async(api_key, system_prompt, user_prompt, db, uid, local_date)
     if not result:
-        raise HTTPException(status_code=503, detail="AI service unavailable")
+        raise HTTPException(status_code=503, detail=f"AI service unavailable: {error_reason}")
     try:
-        cleaned = result.strip().strip('`').strip()
-        if cleaned.startswith("json"):
-            cleaned = cleaned[4:].strip()
-        data = json.loads(cleaned)
+        data = validate_and_repair_json(result, dict)
         plan_items = [models.PlanTaskItem(**item) for item in data.get("plan", [])]
         return models.PlanDayResponse(message=data.get("message", "Let's have a great day!"), plan=plan_items)
     except Exception:
         raise HTTPException(status_code=422, detail="AI returned invalid plan format. Please try again.")
 
 @app.post("/api/tasks", response_model=models.TaskResponse)
-async def create_task(task: models.TaskCreate, x_api_key: Optional[str] = Header(None), db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
+async def create_task(task: models.TaskCreate, x_api_key: Optional[str] = Header(None), x_local_date: Optional[str] = Header(None), db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
     api_key_to_use = x_api_key if x_api_key else os.getenv("GEMINI_API_KEY")
     title = task.raw
     category = "Personal"
@@ -408,58 +337,23 @@ async def create_task(task: models.TaskCreate, x_api_key: Optional[str] = Header
         title = task.title if task.title else task.raw
         category = guess_category(title)
     elif api_key_to_use:
-        current_day = today_key()
-        usage_row = get_or_create_usage_row(db, current_day)
-        is_default_key = (api_key_to_use == os.getenv("GEMINI_API_KEY"))
+        local_date = x_local_date if x_local_date else datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        system_prompt, user_prompt = task_parser_prompt(task.raw)
         
-        if is_default_key and usage_row.count >= DAILY_AI_LIMIT:
-            ai_failed = True
-            ai_failure_reason = "daily_limit"
-        else:
-            system_prompt = (
-                "You are 'Kar De', an intelligent task architect. "
-                "Format the input into a professional English task title. "
-                "Rules: 1. Keep it 2-5 words. 2. Start with a relevant emoji. "
-                "3. Handle Hindi/Hinglish accurately (e.g. 'gym jana hai' -> '💪 Hit the Gym'). "
-                "4. Return ONLY the formatted string: [Emoji] [Title]."
-            )
-            genai.configure(api_key=api_key_to_use)
-            ai_success = False
-            last_failure_reason = None
-            for model_name in FALLBACK_MODELS:
-                try:
-                    # We still run these in thread via call_gemini if we refactored,
-                    # but let's keep it simple here since it's already inside a loop.
-                    # Actually, let's wrap the whole loop logic in call_gemini_async style if possible.
-                    # For now, I'll just use asyncio.to_thread for the specific model call.
-                    def _call_single_model(m_name, s_prompt, u_prompt):
-                        enforce_gemini_spacing()
-                        model = genai.GenerativeModel(model_name=m_name, system_instruction=s_prompt)
-                        return model.generate_content(u_prompt)
-
-                    response = await asyncio.to_thread(_call_single_model, model_name, system_prompt, task.raw)
-                    maybe_title = (response.text or "").strip().strip('"')
-                    if maybe_title:
-                        title = maybe_title
+        result, error_reason = await call_gemini_async(api_key_to_use, system_prompt, user_prompt, db, uid, local_date)
+        
+        if result:
+            try:
+                data = validate_and_repair_json(result, dict)
+                parsed_title = data.get("title", "").strip().strip('"')
+                if parsed_title:
+                    title = parsed_title
                     category = guess_category(title)
-                    usage_row.count += 1
-                    db.commit()
-                    ai_success = True
-                    logger.info(f"AI success with model: {model_name}")
-                    break
-                except Exception as exc:
-                    lowered = str(exc).lower()
-                    is_quota = "429" in lowered or "resource_exhausted" in lowered or "quota" in lowered
-                    is_unavailable = "503" in lowered or "unavailable" in lowered
-                    is_not_found = "404" in lowered or "not found" in lowered or "is not found for api version" in lowered
-                    last_failure_reason = "rate_limit" if is_quota else "offline" if is_unavailable else "model_not_found" if is_not_found else "offline"
-                    logger.warning(f"Model {model_name} failed: {str(exc)[:120]}")
-                    if is_quota or is_unavailable or is_not_found:
-                        continue
-                    break
-            if not ai_success:
-                ai_failed = True
-                ai_failure_reason = last_failure_reason or "offline"
+            except Exception:
+                pass # Fallback to raw if JSON parse fails
+        else:
+            ai_failed = True
+            ai_failure_reason = error_reason or "offline"
     else:
         ai_failed = True
         ai_failure_reason = "offline"
@@ -594,9 +488,9 @@ def delete_account(db: Session = Depends(get_db), uid: str = Depends(get_current
 # ─── Habit Endpoints ──────────────────────────────────────────────────────────
 
 @app.get("/api/habits", response_model=List[models.HabitResponse])
-def get_habits(date: Optional[str] = None, db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
+def get_habits(date: Optional[str] = None, x_local_date: Optional[str] = Header(None), db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
     habits = db.query(models.HabitDB).filter(models.HabitDB.user_id == uid, models.HabitDB.is_active == True).all()
-    today_str = today_key(date)
+    today_str = date or x_local_date or datetime.now(timezone.utc).strftime("%Y-%m-%d")
     result = []
     for h in habits:
         logs = db.query(models.HabitLogDB).filter(models.HabitLogDB.habit_id == h.id).all()
@@ -650,12 +544,12 @@ def delete_habit(habit_id: str, db: Session = Depends(get_db), uid: str = Depend
     return {"status": "deleted"}
 
 @app.post("/api/habits/{habit_id}/log")
-def log_habit(habit_id: str, date: Optional[str] = None, db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
+def log_habit(habit_id: str, date: Optional[str] = None, x_local_date: Optional[str] = Header(None), db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
     # Verify habit ownership
     h = db.query(models.HabitDB).filter(models.HabitDB.id == habit_id, models.HabitDB.user_id == uid).first()
     if not h:
         raise HTTPException(status_code=404, detail="Habit not found")
-    today_str = today_key(date)
+    today_str = date or x_local_date or datetime.now(timezone.utc).strftime("%Y-%m-%d")
     existing = db.query(models.HabitLogDB).filter(
         models.HabitLogDB.habit_id == habit_id,
         models.HabitLogDB.logged_date == today_str
@@ -672,12 +566,12 @@ def log_habit(habit_id: str, date: Optional[str] = None, db: Session = Depends(g
     return {"status": "logged", "date": today_str}
 
 @app.delete("/api/habits/{habit_id}/log")
-def unlog_habit(habit_id: str, date: Optional[str] = None, db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
+def unlog_habit(habit_id: str, date: Optional[str] = None, x_local_date: Optional[str] = Header(None), db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
     # Verify habit ownership
     h = db.query(models.HabitDB).filter(models.HabitDB.id == habit_id, models.HabitDB.user_id == uid).first()
     if not h:
         raise HTTPException(status_code=404, detail="Habit not found")
-    today_str = today_key(date)
+    today_str = date or x_local_date or datetime.now(timezone.utc).strftime("%Y-%m-%d")
     db.query(models.HabitLogDB).filter(
         models.HabitLogDB.habit_id == habit_id,
         models.HabitLogDB.logged_date == today_str
@@ -686,17 +580,14 @@ def unlog_habit(habit_id: str, date: Optional[str] = None, db: Session = Depends
     return {"status": "unlogged"}
 
 @app.get("/api/habits/{habit_id}/heatmap", response_model=List[models.HeatmapEntry])
-def get_heatmap(habit_id: str, db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
+def get_heatmap(habit_id: str, x_local_date: Optional[str] = Header(None), db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
     # Verify habit ownership
     h = db.query(models.HabitDB).filter(models.HabitDB.id == habit_id, models.HabitDB.user_id == uid).first()
     if not h:
         raise HTTPException(status_code=404, detail="Habit not found")
     logs = db.query(models.HabitLogDB).filter(models.HabitLogDB.habit_id == habit_id).all()
-    logged_set = set(l.logged_date for l in logs)
+    # Return all logs. The frontend handles the grid construction and padding.
     result = []
-    today = datetime.utcnow().date()
-    for i in range(364, -1, -1):
-        d = today - timedelta(days=i)
-        ds = d.strftime("%Y-%m-%d")
-        result.append(models.HeatmapEntry(date=ds, done=ds in logged_set, count=1 if ds in logged_set else 0))
+    for log in logs:
+        result.append(models.HeatmapEntry(date=log.logged_date, done=True, count=1))
     return result

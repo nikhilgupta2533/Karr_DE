@@ -37,9 +37,12 @@ export function InsightsTab({ tasks }) {
         const chart = context.chart;
         const { ctx, chartArea } = chart;
         if (!chartArea) return null;
+        const style = getComputedStyle(document.documentElement);
+        const c1 = style.getPropertyValue('--accent-2').trim() || '#bd5cff';
+        const c2 = style.getPropertyValue('--accent-1').trim() || '#00f2ff';
         const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
-        gradient.addColorStop(0, '#bd5cff');
-        gradient.addColorStop(1, '#00f2ff');
+        gradient.addColorStop(0, c1);
+        gradient.addColorStop(1, c2);
         return gradient;
       },
       borderRadius: 12,
@@ -47,31 +50,36 @@ export function InsightsTab({ tasks }) {
     }]
   };
 
+  const style = getComputedStyle(document.documentElement);
+  const textMuted = style.getPropertyValue('--text-muted').trim() || '#9491a6';
+  const glassBorder = style.getPropertyValue('--glass-border').trim() || 'rgba(255, 255, 255, 0.1)';
+  const bgGlass = style.getPropertyValue('--bg-glass').trim() || 'rgba(10, 5, 20, 0.95)';
+
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: { 
       legend: { display: false },
       tooltip: {
-        backgroundColor: 'rgba(10, 5, 20, 0.95)',
+        backgroundColor: bgGlass,
         titleFont: { family: 'Space Grotesk', weight: 'bold' },
         bodyFont: { family: 'Space Grotesk' },
         padding: 16,
         cornerRadius: 16,
         displayColors: false,
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)'
+        borderColor: glassBorder
       }
     },
     scales: {
       x: { 
         grid: { display:false }, 
-        ticks: { color:'#9491a6', font: { family: 'Space Grotesk', size: 10, weight: '600' } },
+        ticks: { color: textMuted, font: { family: 'Space Grotesk', size: 10, weight: '600' } },
         border: { display: false }
       },
       y: { 
-        grid: { color:'rgba(255,255,255,0.03)' }, 
-        ticks: { stepSize:1, color:'#9491a6', font: { family: 'Space Grotesk', size: 10 } }, 
+        grid: { color: glassBorder }, 
+        ticks: { stepSize:1, color: textMuted, font: { family: 'Space Grotesk', size: 10 } }, 
         beginAtZero: true,
         border: { display: false }
       }
