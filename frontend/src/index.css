@@ -2,19 +2,20 @@
 
 :root {
   /* Fluid Palette */
-  --bg-body: #05020a;
-  --bg-glass: hsla(255, 40%, 12%, 0.65);
-  --bg-glass-hover: hsla(255, 40%, 18%, 0.85);
-  --glass-border: hsla(0, 0%, 100%, 0.12);
-  --glass-border-bright: hsla(0, 0%, 100%, 0.2);
+  --bg-body: #0A0A0F;
+  --bg-glass: rgba(20, 20, 35, 0.6);
+  --bg-glass-hover: rgba(30, 30, 50, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-bright: rgba(255, 255, 255, 0.15);
   
-  --text-light: #f8f7ff;
-  --text-muted: #9491a6;
+  --text-light: #F8F7FF;
+  --text-muted: #8F8FA3;
   
-  --accent-1: #00f2ff; /* Kinetic Cyan */
-  --accent-2: #bd5cff; /* Radiant Purple */
-  --danger: #ff3366;
-  --success: #00ff9d;
+  --accent-1: #00D4FF;
+  --accent-2: #7B61FF;
+  --accent-gradient: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+  --danger: #FF3366;
+  --success: #00FF9D;
   
   --nav-height: 80px;
   --radius-lg: 24px;
@@ -73,14 +74,21 @@ body {
   font-family: 'Space Grotesk', sans-serif;
   background-color: var(--bg-body);
   background-image: 
-    radial-gradient(circle at 10% 20%, hsla(180, 100%, 50%, 0.1), transparent 30%),
-    radial-gradient(circle at 90% 80%, hsla(270, 100%, 68%, 0.1), transparent 30%),
+    radial-gradient(circle at 10% 20%, hsla(180, 100%, 50%, 0.15), transparent 40%),
+    radial-gradient(circle at 90% 80%, hsla(270, 100%, 68%, 0.15), transparent 40%),
     radial-gradient(circle at 50% 50%, hsla(255, 40%, 5%, 1), var(--bg-body));
   background-attachment: fixed;
+  background-size: 200% 200%;
+  animation: bgPan 25s ease-in-out infinite alternate;
   color: var(--text-light);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+}
+
+@keyframes bgPan {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 100% 100%; }
 }
 
 #root {
@@ -102,12 +110,12 @@ body {
 /* Glassmorphism Core */
 .glass-panel {
   background: var(--bg-glass);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
   border: 1px solid var(--glass-border);
   box-shadow: 
-    0 4px 24px -1px rgba(0, 0, 0, 0.2),
-    inset 0 0 0 1px hsla(0, 0%, 100%, 0.05);
+    0 8px 32px 0 rgba(0, 0, 0, 0.3),
+    inset 0 0 0 1px hsla(0, 0%, 100%, 0.02);
 }
 
 /* Utils */
@@ -115,8 +123,13 @@ body {
   transition: transform 0.3s var(--ease-soft), filter 0.3s var(--ease-soft);
 }
 
+.magnetic-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--glass-border-bright);
+}
+
 .magnetic-btn:active {
-  transform: scale(0.94);
+  transform: scale(0.95);
 }
 
 /* Animations */
@@ -126,8 +139,8 @@ body {
 }
 
 @keyframes slideInTask {
-  from { opacity: 0; transform: translateX(-10px) scale(0.98); }
-  to { opacity: 1; transform: translateX(0) scale(1); }
+  from { opacity: 0; transform: translateX(-15px) scale(0.95); filter: blur(4px); }
+  to { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
 }
 
 @keyframes popCheck {
@@ -140,6 +153,10 @@ body {
   0% { box-shadow: 0 0 0 0 hsla(180, 100%, 50%, 0.4); }
   70% { box-shadow: 0 0 0 15px hsla(180, 100%, 50%, 0); }
   100% { box-shadow: 0 0 0 0 hsla(180, 100%, 50%, 0); }
+}
+
+.glow-burst {
+  animation: glowPulse 0.8s ease-out;
 }
 
 @keyframes shimmer {
@@ -209,8 +226,8 @@ body {
 }
 
 @keyframes tabEnter {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(15px); filter: blur(4px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
 }
 
 /* ─── Print / PDF Export ────────────────────────────────────────────────── */

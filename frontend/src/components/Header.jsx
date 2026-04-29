@@ -12,7 +12,7 @@ function getSoundPref() {
   } catch { return true; }
 }
 
-export function Header({ onOpenSettings, theme, onToggleTheme, user }) {
+export function Header({ onOpenSettings, theme, onToggleTheme, user, productivityScore }) {
   const [soundOn, setSoundOn] = useState(getSoundPref);
   const [signingOut, setSigningOut] = useState(false);
 
@@ -34,6 +34,11 @@ export function Header({ onOpenSettings, theme, onToggleTheme, user }) {
       <div className="brand">
         <h1>Kar De</h1>
         <span>Intelligent Flow</span>
+      </div>
+
+      <div className="productivity-badge" title="Daily Productivity Score">
+        <span className="score-label">Score</span>
+        <span className="score-value">{productivityScore}</span>
       </div>
       <div className="header-actions">
         {/* Theme toggle */}

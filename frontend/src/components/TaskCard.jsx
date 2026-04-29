@@ -1,12 +1,13 @@
 import { useEffect, useState, useRef } from 'react';
 import {
   Trash2, CheckCircle2, Circle, Pin, Clock3,
-  Pencil, X, ChevronDown, ChevronUp, Sparkles
+  Pencil, X, ChevronDown, ChevronUp, Sparkles, Target
 } from 'lucide-react';
 import './TaskCard.css';
 
 const CATEGORIES = ['Personal','Work','Health','Home'];
 const PRIORITIES  = ['low','medium','high'];
+const DIFFICULTIES = ['easy','medium','hard'];
 
 function parseSubtasks(raw) {
   if (!raw) return [];
@@ -16,7 +17,7 @@ function parseSubtasks(raw) {
 export function TaskCard({
   task, onToggle, onDelete, onTogglePin,
   onUpdateTitle, onUpdateDueTime, onUpdateTask,
-  onAIRewrite, soundFns, renderMeta,
+  onAIRewrite, soundFns, renderMeta, onFocus, style
 }) {
   const [editing,       setEditing]       = useState(false);
   const [draftTitle,    setDraftTitle]    = useState(task.title || '');
@@ -24,10 +25,21 @@ export function TaskCard({
   const [lastTapAt,     setLastTapAt]     = useState(0);
   const [showSubtasks,  setShowSubtasks]  = useState(false);
   const [aiLoading,     setAiLoading]     = useState(false);
+  const [justCompleted, setJustCompleted] = useState(false);
+  const prevStatus = useRef(task.status);
+
+  useEffect(() => {
+    if (prevStatus.current === 'pending' && task.status === 'completed') {
+      setJustCompleted(true);
+      const timer = setTimeout(() => setJustCompleted(false), 800);
+      return () => clearTimeout(timer);
+    }
+    prevStatus.current = task.status;
+  }, [task.status]);
 
   // Inline edit draft state
   const [editDraft, setEditDraft] = useState({
-    title: '', category: 'Personal', priority: 'medium',
+    title: '', category: 'Personal', priority: 'medium', difficulty: 'medium',
     recurrence: 'none', due_time: '',
   });
 
@@ -87,6 +99,7 @@ export function TaskCard({
       title:      cleanTitleOnly(displayTitle),
       category:   task.category   || 'Personal',
       priority:   task.priority   || 'medium',
+      difficulty: task.difficulty || 'medium',
       recurrence: task.recurrence || 'none',
       due_time:   task.due_time   || '',
     });
@@ -98,6 +111,7 @@ export function TaskCard({
       title:     editDraft.title.trim() || displayTitle,
       category:  editDraft.category,
       priority:  editDraft.priority,
+      difficulty: editDraft.difficulty,
       recurrence: editDraft.recurrence === 'none' ? null : editDraft.recurrence,
       due_time:  editDraft.due_time || null,
     };
@@ -173,6 +187,13 @@ export function TaskCard({
             </select>
             <select
               className="edit-select"
+              value={editDraft.difficulty}
+              onChange={e => setEditDraft(d => ({ ...d, difficulty: e.target.value }))}
+            >
+              {DIFFICULTIES.map(d => <option key={d} value={d}>{d.charAt(0).toUpperCase()+d.slice(1)}</option>)}
+            </select>
+            <select
+              className="edit-select"
               value={editDraft.recurrence}
               onChange={e => setEditDraft(d => ({ ...d, recurrence: e.target.value }))}
             >
@@ -207,7 +228,7 @@ export function TaskCard({
   }
 
   return (
-    <div className={`task-card ${isCompleted ? 'completed' : ''} ${isMissed ? 'missed' : ''} ${task.is_pinned ? 'pinned' : ''}`}>
+    <div className={`task-card ${isCompleted ? 'completed' : ''} ${isMissed ? 'missed' : ''} ${task.is_pinned ? 'pinned' : ''} ${justCompleted ? 'glow-burst' : ''}`} data-priority={task.priority || 'medium'} style={style}>
       <button
         type="button"
         className="check-btn magnetic-btn"
@@ -248,22 +269,26 @@ export function TaskCard({
           <div className="task-raw">{task.raw}</div>
         )}
 
-        {/* Subtask progress bar */}
+        {/* Subtask progress ring */}
         {subtasks.length > 0 && (
           <div className="subtask-progress-row">
-            <div className="subtask-progress-bar">
-              <div
-                className="subtask-progress-fill"
-                style={{ width: `${(subtaskDone / subtasks.length) * 100}%` }}
-              />
+            <div className="subtask-progress-ring-wrap" onClick={() => setShowSubtasks(s => !s)}>
+              <svg className="subtask-progress-ring" viewBox="0 0 36 36">
+                <circle className="ring-bg" cx="18" cy="18" r="16" />
+                <circle 
+                  className="ring-fill" 
+                  cx="18" cy="18" r="16" 
+                  strokeDasharray={`${(subtaskDone / subtasks.length) * 100} 100`} 
+                />
+              </svg>
+              <span className="ring-text">{subtaskDone}/{subtasks.length}</span>
             </div>
             <button
               type="button"
               className="subtask-toggle-btn"
               onClick={() => setShowSubtasks(s => !s)}
             >
-              {subtaskDone}/{subtasks.length}
-              {showSubtasks ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+              {showSubtasks ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             </button>
           </div>
         )}
@@ -285,6 +310,7 @@ export function TaskCard({
         )}
 
         <div className="task-meta">
+          {task.difficulty && <span className="task-meta-item diff-badge">{task.difficulty}</span>}
           <span className="task-meta-item">{timeStr}</span>
           {renderMeta && renderMeta()}
           {showTimeEditor && (
@@ -301,6 +327,18 @@ export function TaskCard({
       </div>
 
       <div className="task-controls">
+        {/* Focus icon */}
+        {canEdit && onFocus && (
+          <button
+            type="button"
+            className="control-btn magnetic-btn"
+            onClick={() => onFocus(task.id)}
+            aria-label="Focus on task"
+          >
+            <Target size={16} strokeWidth={2} />
+          </button>
+        )}
+
         {/* Edit icon — hidden for completed/missed */}
         {canEdit && (
           <button

@@ -7,7 +7,7 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(12px);
 }
 
 .brand h1 {
@@ -112,4 +112,45 @@
     height: 30px;
   }
   .header-actions { gap: 4px; }
+}
+
+/* -- Productivity Badge ------------------------------------------------ */
+.productivity-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--bg-glass);
+  border: 1px solid var(--accent-1);
+  padding: 4px 12px;
+  border-radius: 12px;
+  margin-left: 10px;
+  margin-right: auto;
+  box-shadow: 0 0 10px hsla(180, 100%, 50%, 0.1);
+  transition: all 0.3s var(--ease-soft);
+  animation: scorePulse 3s infinite alternate;
+}
+
+@keyframes scorePulse {
+  from { box-shadow: 0 0 5px hsla(180, 100%, 50%, 0.1); }
+  to { box-shadow: 0 0 20px hsla(180, 100%, 50%, 0.4); }
+}
+
+.productivity-badge:hover {
+  transform: translateY(-2px);
+  background: var(--bg-glass-hover);
+}
+
+.score-label {
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.score-value {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--accent-1);
+  line-height: 1.2;
 }

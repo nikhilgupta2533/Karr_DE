@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useTasks } from './hooks/useTasks';
+import { useTasks, getYYYYMMDD } from './hooks/useTasks';
 import { useHabits } from './hooks/useHabits';
 import { useSound, closeAudioContext } from './hooks/useSound';
 import { useAuth } from './hooks/useAuth';
@@ -11,6 +11,7 @@ import { InsightsTab } from './components/InsightsTab';
 import { HabitsTab } from './components/HabitsTab';
 import { SettingsModal } from './components/SettingsModal';
 import { AuthScreen } from './components/AuthScreen';
+import { ReviewMissedModal } from './components/ReviewMissedModal';
 
 // ── Theme helpers ─────────────────────────────────────────────────────────────
 const THEME_KEY = 'kardeTheme';
@@ -65,6 +66,7 @@ function App() {
     settings, setSettings, clearData,
     toast, confirmBulkComplete, updateTaskTitle, addTemplateTasks,
     updateTaskDueTime, updateTask, decomposeTask, planDay, toggleSubtask,
+    productivityScore
   } = useTasks(idToken, getFreshToken);
 
   const habitsHook = useHabits(idToken, getFreshToken);
@@ -83,6 +85,26 @@ function App() {
     if (!('serviceWorker' in navigator)) return;
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   }, []);
+
+  // Smart Notifications: Evening reminder if nothing done
+  useEffect(() => {
+    if (!tasks.length) return;
+    const todayStr = getYYYYMMDD(new Date());
+    const todaysTasks = tasks.filter(t => getYYYYMMDD(new Date(t.addedAt)) === todayStr);
+    const completedToday = todaysTasks.filter(t => t.status === 'completed').length;
+    
+    const hour = new Date().getHours();
+    if (hour >= 18 && completedToday === 0 && todaysTasks.length > 0) {
+      const lastReminded = localStorage.getItem(`reminded_${todayStr}`);
+      if (!lastReminded && Notification.permission === 'granted') {
+        new Notification('⏰ Kar De Flow', {
+          body: "It's getting late! Let's get at least one task done to keep the momentum.",
+          icon: '/favicon.ico',
+        });
+        localStorage.setItem(`reminded_${todayStr}`, 'true');
+      }
+    }
+  }, [tasks]);
 
   // Missed pattern for Plan Day
   const missedPattern = (() => {
@@ -108,6 +130,7 @@ function App() {
         theme={theme}
         onToggleTheme={toggleTheme}
         user={user}
+        productivityScore={productivityScore}
       />
 
       <main className="main-content">
@@ -172,6 +195,8 @@ function App() {
           ))}
         </div>
       </div>
+
+      <ReviewMissedModal tasks={tasks} updateTask={updateTask} />
     </div>
   );
 }

@@ -40,21 +40,34 @@
 /* ── Add form ─────────────────────────────────────────────────────────── */
 .add-habit-form {
   display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 20px;
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+.add-habit-row {
+  display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 14px;
-  border-radius: 100px;
+}
+.add-habit-meta-row {
+  border-top: 1px solid hsla(0,0%,100%,0.05);
+  padding-top: 10px;
 }
 .habit-icon-input {
-  width: 40px;
-  text-align: center;
-  background: var(--bg-glass);
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 12px;
+  background: var(--bg-glass-hover);
   border: 1px solid var(--glass-border);
-  border-radius: 8px;
   color: var(--text-light);
-  font-size: 18px;
-  padding: 6px;
+  font-size: 20px;
+  text-align: center;
   outline: none;
+  transition: all 0.3s;
 }
 .habit-name-input {
   flex: 1;
@@ -66,6 +79,25 @@
   font-weight: 500;
   font-family: inherit;
   padding: 6px 0;
+}
+.habit-identity-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-light);
+  font-size: 13px;
+  font-family: inherit;
+}
+.habit-difficulty-select {
+  background: var(--bg-glass-hover);
+  border: 1px solid var(--glass-border);
+  color: var(--text-light);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
 }
 .habit-name-input::placeholder { color: var(--text-muted); opacity: 0.6; }
 .habit-add-btn {
@@ -89,9 +121,17 @@
   justify-content: space-between;
   padding: 14px 18px;
   border-radius: var(--radius-md);
-  transition: all 0.3s var(--ease-soft);
+  transition: transform 0.4s var(--ease-bounce), box-shadow 0.4s var(--ease-soft), border-color 0.4s, background 0.4s;
   flex-wrap: wrap;
   gap: 10px;
+  border: 1px solid var(--glass-border);
+  background: var(--bg-glass);
+  animation: slideUpFade 0.5s var(--ease-soft) both;
+}
+.habit-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent-1);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.3);
 }
 .habit-card.habit-done {
   border-color: hsla(160,100%,50%,0.25);
@@ -102,9 +142,41 @@
 .habit-icon { font-size: 26px; line-height: 1; }
 .habit-info { display: flex; flex-direction: column; gap: 2px; }
 .habit-name { font-size: 16px; font-weight: 600; color: var(--text-light); }
+.habit-identity {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-top: 2px;
+  margin-bottom: 4px;
+}
+.habit-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 2px;
+}
 .habit-streak {
   display: flex; align-items: center; gap: 4px;
   font-size: 12px; color: #ff6b35; font-weight: 600;
+}
+.habit-streak-risk { color: var(--danger); }
+.habit-difficulty {
+  font-size: 10px;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+  background: hsla(0,0%,100%,0.1);
+  color: var(--text-light);
+}
+.habit-difficulty.diff-easy { color: var(--success); }
+.habit-difficulty.diff-medium { color: #FFA500; }
+.habit-difficulty.diff-hard { color: var(--danger); }
+.habit-risk-warning {
+  font-size: 11px;
+  color: var(--danger);
+  margin-top: 4px;
+  font-weight: 600;
 }
 
 .habit-checkbox-label { cursor: pointer; display: flex; align-items: center; }

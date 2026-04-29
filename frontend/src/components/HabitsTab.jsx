@@ -105,8 +105,12 @@ export function HabitsTab({ habitsHook }) {
   const { habits, loading, error, fetchHabits, addHabit, removeHabit, logHabit, unlogHabit, fetchHeatmap } = habitsHook;
   const [newIcon, setNewIcon] = useState('⭐');
   const [newName, setNewName] = useState('');
+  const [newIdentity, setNewIdentity] = useState('');
+  const [newDifficulty, setNewDifficulty] = useState('medium');
   const [heatmapData, setHeatmapData] = useState({}); // habitId → date[]
   const [selectedHabit, setSelectedHabit] = useState(null);
+
+
 
 
   // Load heatmap for selected habit
@@ -117,14 +121,16 @@ export function HabitsTab({ habitsHook }) {
       const dates = entries.filter(e => e.done).map(e => e.date);
       setHeatmapData(prev => ({ ...prev, [selectedHabit]: dates }));
     });
-  }, [selectedHabit]);
+  }, [selectedHabit, heatmapData, fetchHeatmap]);
 
   const handleAdd = async (e) => {
     e.preventDefault();
     if (!newName.trim()) return;
-    await addHabit(newName.trim(), newIcon);
+    await addHabit(newName.trim(), newIcon, newIdentity.trim(), newDifficulty);
     setNewName('');
     setNewIcon('⭐');
+    setNewIdentity('');
+    setNewDifficulty('medium');
   };
 
   const handleToggle = async (h) => {
@@ -164,24 +170,44 @@ export function HabitsTab({ habitsHook }) {
 
       {/* Add habit form */}
       <form className="add-habit-form glass-panel" onSubmit={handleAdd}>
-        <input
-          type="text"
-          className="habit-icon-input"
-          value={newIcon}
-          onChange={e => setNewIcon(e.target.value)}
-          maxLength={4}
-          placeholder="⭐"
-        />
-        <input
-          type="text"
-          className="habit-name-input"
-          value={newName}
-          onChange={e => setNewName(e.target.value)}
-          placeholder="New habit..."
-        />
-        <button type="submit" className="habit-add-btn magnetic-btn" disabled={!newName.trim()}>
-          <Plus size={18} strokeWidth={3} />
-        </button>
+        <div className="add-habit-row">
+          <input
+            type="text"
+            className="habit-icon-input"
+            value={newIcon}
+            onChange={e => setNewIcon(e.target.value)}
+            maxLength={4}
+            placeholder="⭐"
+          />
+          <input
+            type="text"
+            className="habit-name-input"
+            value={newName}
+            onChange={e => setNewName(e.target.value)}
+            placeholder="New habit (e.g. Read 10 pages)"
+          />
+          <button type="submit" className="habit-add-btn magnetic-btn" disabled={!newName.trim()}>
+            <Plus size={18} strokeWidth={3} />
+          </button>
+        </div>
+        <div className="add-habit-row add-habit-meta-row">
+          <input
+            type="text"
+            className="habit-identity-input"
+            value={newIdentity}
+            onChange={e => setNewIdentity(e.target.value)}
+            placeholder="Identity (e.g. A Reader)"
+          />
+          <select 
+            className="habit-difficulty-select"
+            value={newDifficulty}
+            onChange={e => setNewDifficulty(e.target.value)}
+          >
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+        </div>
       </form>
 
       {/* Error/loading state */}
@@ -197,16 +223,25 @@ export function HabitsTab({ habitsHook }) {
       )}
 
       <div className="habits-list">
-        {habits.map(h => (
+        {habits.map(h => {
+          // Streak risk: missed 2+ days or 1 day and not yet logged today
+          const isAtRisk = h.missed_days >= 1 && !h.logged_today;
+
+          return (
           <div key={h.id} className={`habit-card glass-panel ${h.logged_today ? 'habit-done' : ''}`}>
             <div className="habit-card-left">
               <span className="habit-icon">{h.icon || '⭐'}</span>
               <div className="habit-info">
                 <div className="habit-name">{h.name}</div>
-                <div className="habit-streak">
-                  <Flame size={12} />
-                  {h.streak} day streak
+                {h.identity && <div className="habit-identity">Building: {h.identity}</div>}
+                <div className="habit-meta-row">
+                  <div className={`habit-streak ${isAtRisk ? 'habit-streak-risk' : ''}`}>
+                    <Flame size={12} />
+                    {h.streak} day streak
+                  </div>
+                  <div className={`habit-difficulty diff-${h.difficulty}`}>{h.difficulty}</div>
                 </div>
+                {isAtRisk && <div className="habit-risk-warning">⚠️ {h.missed_days} day missed! Don't lose the streak!</div>}
               </div>
             </div>
             <div className="habit-card-right">
@@ -244,7 +279,8 @@ export function HabitsTab({ habitsHook }) {
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Combined legend */}

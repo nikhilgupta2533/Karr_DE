@@ -40,23 +40,21 @@ if "sqlite" in db_url:
             ("priority",    "TEXT DEFAULT 'medium'"),
             ("subtasks",    "TEXT"),
             ("user_id",     "TEXT DEFAULT 'default'"),
+            ("missed_reason", "TEXT"),
         ]:
             if col not in cols:
                 conn.execute(text(f"ALTER TABLE tasks ADD COLUMN {col} {defn}"))
                 conn.commit()
 
-        # habits table
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS habits (
-                id TEXT PRIMARY KEY,
-                user_id TEXT NOT NULL DEFAULT 'default',
-                name TEXT NOT NULL,
-                icon TEXT DEFAULT '⭐',
-                created_at TEXT,
-                is_active INTEGER NOT NULL DEFAULT 1
-            )
-        """))
-        conn.commit()
+        # habits table columns
+        cols = [row[1] for row in conn.execute(text("PRAGMA table_info(habits)")).fetchall()]
+        for col, defn in [
+            ("identity", "TEXT"),
+            ("difficulty", "TEXT DEFAULT 'medium' NOT NULL"),
+        ]:
+            if col not in cols:
+                conn.execute(text(f"ALTER TABLE habits ADD COLUMN {col} {defn}"))
+                conn.commit()
 
         # habit_logs table
         conn.execute(text("""
@@ -277,6 +275,8 @@ def bulk_update_tasks(payload: List[models.TaskUpdateWithId], db: Session = Depe
             db_task.due_time = normalized_due_time(item.due_time)
         if item.subtasks is not None:
             db_task.subtasks = item.subtasks
+        if item.missed_reason is not None:
+            db_task.missed_reason = item.missed_reason
         spawn_next_recurring_task(db, db_task, previous_status)
         results.append(serialize_task(db_task))
     db.commit()
@@ -413,6 +413,8 @@ def update_task(task_id: str, payload: models.TaskUpdate, db: Session = Depends(
         db_task.due_time = normalized_due_time(payload.due_time)
     if payload.subtasks is not None:
         db_task.subtasks = payload.subtasks
+    if payload.missed_reason is not None:
+        db_task.missed_reason = payload.missed_reason
     spawn_next_recurring_task(db, db_task, previous_status)
     db.commit()
     db.refresh(db_task)
@@ -439,6 +441,8 @@ def patch_task(task_id: str, payload: models.TaskUpdateRequest, db: Session = De
         db_task.due_time = normalized_due_time(payload.due_time) if payload.due_time else None
     if payload.subtasks is not None:
         db_task.subtasks = payload.subtasks
+    if payload.missed_reason is not None:
+        db_task.missed_reason = payload.missed_reason
     db.commit()
     db.refresh(db_task)
     return serialize_task(db_task)
@@ -511,10 +515,20 @@ def get_habits(date: Optional[str] = None, x_local_date: Optional[str] = Header(
                     check_date -= timedelta(days=1)
                 else:
                     break
+        # missed calc
+        missed_days = 0
+        if not logged_today:
+            check_date = datetime.strptime(today_str, "%Y-%m-%d") - timedelta(days=1)
+            while check_date.strftime("%Y-%m-%d") not in logged_dates and check_date.strftime("%Y-%m-%dT00:00:00Z") >= (h.created_at or ""):
+                missed_days += 1
+                check_date -= timedelta(days=1)
+                
         r = models.HabitResponse(
             id=h.id, name=h.name, icon=h.icon or "⭐",
+            identity=h.identity, difficulty=h.difficulty,
             created_at=h.created_at, is_active=h.is_active,
-            streak=streak, logged_today=logged_today
+            streak=streak, logged_today=logged_today,
+            missed_days=missed_days
         )
         result.append(r)
     return result
@@ -526,13 +540,15 @@ def create_habit(payload: models.HabitCreate, db: Session = Depends(get_db), uid
         user_id=uid,
         name=payload.name,
         icon=payload.icon or "⭐",
+        identity=payload.identity,
+        difficulty=payload.difficulty or "medium",
         created_at=datetime.utcnow().isoformat() + "Z",
         is_active=True,
     )
     db.add(h)
     db.commit()
     db.refresh(h)
-    return models.HabitResponse(id=h.id, name=h.name, icon=h.icon, created_at=h.created_at, is_active=h.is_active, streak=0, logged_today=False)
+    return models.HabitResponse(id=h.id, name=h.name, icon=h.icon, identity=h.identity, difficulty=h.difficulty, created_at=h.created_at, is_active=h.is_active, streak=0, logged_today=False, missed_days=0)
 
 @app.delete("/api/habits/{habit_id}")
 def delete_habit(habit_id: str, db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):

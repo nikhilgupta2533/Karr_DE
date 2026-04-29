@@ -162,6 +162,16 @@ export function RecordsTab({ tasks }) {
   const todayCompleted = todaysTasks.filter(t => t.status === 'completed').length;
   const rate           = todaysTasks.length ? Math.round((todayCompleted / todaysTasks.length) * 100) : 0;
 
+  const yesterdayTasks = tasks.filter(t => getYYYYMMDD(new Date(t.addedAt)) === yestStr);
+  const yesterdayCompleted = yesterdayTasks.filter(t => t.status === 'completed').length;
+  const yesterdayRate = yesterdayTasks.length ? Math.round((yesterdayCompleted / yesterdayTasks.length) * 100) : 0;
+
+  const rateDiff = rate - yesterdayRate;
+  let performanceMsg = "Consistent effort today. Keep it up! 🌊";
+  if (rateDiff > 10) performanceMsg = "Great job! You're performing better than yesterday. 🔥";
+  else if (rateDiff < -10) performanceMsg = "A slight dip from yesterday. You can bounce back! 💪";
+  else if (rate === 100 && rate > 0) performanceMsg = "Perfect day! You crushed everything. 🏆";
+
   const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - 6);
   const weeklyTasks     = tasks.filter(t => new Date(t.addedAt) >= weekStart);
   const weeklyCompleted = weeklyTasks.filter(t => t.status === 'completed');
@@ -266,15 +276,16 @@ export function RecordsTab({ tasks }) {
         </div>
       )}
 
+      <div className="stats-message-card glass-panel">
+        <h4 className="stats-message-title">Today's Insight</h4>
+        <p className="stats-message-text">{performanceMsg}</p>
+        <div className="stats-message-details">
+          <span>Today: {rate}%</span>
+          <span>Yesterday: {yesterdayRate}%</span>
+        </div>
+      </div>
+
       <div className="stats-grid share-bg" id="records-stats-share">
-        <div className="stat-card glass-panel">
-          <div className="stat-label">Total Done</div>
-          <div className="stat-value">{completedTotal}</div>
-        </div>
-        <div className="stat-card glass-panel">
-          <div className="stat-label">Today&apos;s Rate</div>
-          <div className="stat-value">{todayCompleted}/{todaysTasks.length} <span className="stat-sm">({rate}%)</span></div>
-        </div>
         <div className="stat-card glass-panel">
           <div className="stat-label">Current Streak</div>
           <div className="stat-value glow-text-1">{current}</div>
@@ -282,6 +293,10 @@ export function RecordsTab({ tasks }) {
         <div className="stat-card glass-panel">
           <div className="stat-label">Best Streak</div>
           <div className="stat-value glow-text-2">{best}</div>
+        </div>
+        <div className="stat-card glass-panel">
+          <div className="stat-label">Total Done</div>
+          <div className="stat-value">{completedTotal}</div>
         </div>
       </div>
 

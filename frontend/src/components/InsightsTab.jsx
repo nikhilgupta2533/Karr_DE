@@ -99,17 +99,57 @@ export function InsightsTab({ tasks }) {
   });
   const bestDayStr = bCount > 0 ? `${bDate} (${bCount} done)` : 'Complete tasks to see!';
 
-  // Missed Pattern
+  // Missed Pattern & Actionable Suggestion
   const missed = tasks.filter(t => t.status === 'missed');
   let missedPatternStr = "You haven't missed any tasks! 🎉";
+  let actionableSuggestion = "Keep up the great consistency! You are building incredible momentum.";
+  const dayNames = ['Sundays','Mondays','Tuesdays','Wednesdays','Thursdays','Fridays','Saturdays'];
+  
   if (missed.length > 0) {
       const dayC = [0,0,0,0,0,0,0];
       missed.forEach(t => dayC[new Date(t.addedAt).getDay()]++);
       let wDay = 0; let maxM = -1;
       for(let i=0; i<7; i++) { if(dayC[i] > maxM){ maxM = dayC[i]; wDay = i; } }
-      const dayNames = ['Sundays','Mondays','Tuesdays','Wednesdays','Thursdays','Fridays','Saturdays'];
       missedPatternStr = `You tend to miss tasks on ${dayNames[wDay]}.`;
+      actionableSuggestion = `Consider reducing your planned workload on ${dayNames[wDay]}s or schedule a Focus Session earlier in the day to beat fatigue.`;
   }
+
+  // Weekly Report
+  const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - 7);
+  const weeklyTasks = tasks.filter(t => new Date(t.addedAt) >= weekStart);
+  const weeklyCompleted = weeklyTasks.filter(t => t.status === 'completed');
+  const weeklyCompletionRate = weeklyTasks.length ? Math.round((weeklyCompleted.length / weeklyTasks.length) * 100) : 0;
+  
+  const focusStatsStr = localStorage.getItem('karde_focus_stats');
+  let focusScore = 100;
+  if (focusStatsStr) {
+      try { focusScore = JSON.parse(focusStatsStr).score || 100; } catch {}
+  }
+
+  // Discipline Score
+  const disciplineScore = weeklyTasks.length === 0 ? 0 : Math.round((weeklyCompletionRate + focusScore) / 2);
+
+  // Best / Worst Day of Week
+  const weeklyDayC = [0,0,0,0,0,0,0];
+  const weeklyCompC = [0,0,0,0,0,0,0];
+  weeklyTasks.forEach(t => {
+      const day = new Date(t.addedAt).getDay();
+      weeklyDayC[day]++;
+      if (t.status === 'completed') weeklyCompC[day]++;
+  });
+  
+  let worstRate = 101; let worstDayIdx = -1;
+  let bestRate = -1; let bestDayIdx = -1;
+  
+  for(let i=0; i<7; i++) {
+      if (weeklyDayC[i] > 0) {
+          const r = weeklyCompC[i] / weeklyDayC[i];
+          if (r < worstRate) { worstRate = r; worstDayIdx = i; }
+          if (r > bestRate) { bestRate = r; bestDayIdx = i; }
+      }
+  }
+  const worstWeekDayStr = worstDayIdx >= 0 ? dayNames[worstDayIdx] : 'None';
+  const bestWeekDayStr = bestDayIdx >= 0 ? dayNames[bestDayIdx] : 'None';
 
   // Category Breakdown
   const cats = { 'Work': 0, 'Health': 0, 'Home': 0, 'Personal': 0 };
@@ -129,13 +169,33 @@ export function InsightsTab({ tasks }) {
       </div>
       
       <div className="insight-card glass-panel">
-        <div className="insight-title">Meri best day</div>
-        <div className="insight-val">{bestDayStr}</div>
+        <div className="insight-title">Missed Pattern</div>
+        <div className="insight-val" style={{marginBottom: '8px'}}>{missedPatternStr}</div>
+        <div className="insight-suggestion">
+           <strong>💡 Actionable Suggestion:</strong> {actionableSuggestion}
+        </div>
       </div>
-
-      <div className="insight-card glass-panel">
-        <div className="insight-title">Missed pattern</div>
-        <div className="insight-val">{missedPatternStr}</div>
+      
+      <div className="weekly-report-card glass-panel">
+        <div className="insight-title" style={{color: 'var(--accent-1)'}}>Weekly Report</div>
+        <div className="weekly-report-grid">
+          <div className="wr-stat">
+             <span className="wr-label">Discipline Score</span>
+             <span className="wr-value glow-text-1">{disciplineScore}/100</span>
+          </div>
+          <div className="wr-stat">
+             <span className="wr-label">Completion Rate</span>
+             <span className="wr-value">{weeklyCompletionRate}%</span>
+          </div>
+          <div className="wr-stat">
+             <span className="wr-label">Best Day</span>
+             <span className="wr-value">{bestWeekDayStr}</span>
+          </div>
+          <div className="wr-stat">
+             <span className="wr-label">Worst Day</span>
+             <span className="wr-value">{worstWeekDayStr}</span>
+          </div>
+        </div>
       </div>
       
       <div className="insight-card glass-panel">

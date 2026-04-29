@@ -5,8 +5,8 @@
   max-width: 500px;
   height: var(--nav-height);
   background: var(--bg-glass);
-  backdrop-filter: blur(32px) saturate(200%);
-  -webkit-backdrop-filter: blur(32px) saturate(200%);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
   display: flex;
   justify-content: space-evenly;
   align-items: center;

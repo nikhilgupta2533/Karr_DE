@@ -23,6 +23,7 @@ class TaskDB(Base):
     due_time = Column(String, nullable=True)
     subtasks = Column(String, nullable=True)  # JSON array string
     user_id = Column(String, default="default", nullable=True)
+    missed_reason = Column(String, nullable=True)
 
 
 class AIUsageDB(Base):
@@ -39,6 +40,8 @@ class HabitDB(Base):
     user_id = Column(String, default="default", nullable=False)
     name = Column(String, nullable=False)
     icon = Column(String, default="⭐", nullable=True)
+    identity = Column(String, nullable=True)
+    difficulty = Column(String, default="medium", nullable=False)
     created_at = Column(String, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
 
@@ -85,6 +88,7 @@ class TaskResponse(BaseModel):
     user_id: Optional[str] = "default"
     ai_failed: bool = False
     ai_failure_reason: Optional[str] = None
+    missed_reason: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -97,6 +101,7 @@ class TaskUpdate(BaseModel):
     title: Optional[str] = None
     due_time: Optional[str] = None
     subtasks: Optional[str] = None
+    missed_reason: Optional[str] = None
 
 
 class TaskUpdateRequest(BaseModel):
@@ -107,6 +112,7 @@ class TaskUpdateRequest(BaseModel):
     recurrence: Optional[str] = None
     due_time: Optional[str] = None
     subtasks: Optional[str] = None
+    missed_reason: Optional[str] = None
 
 
 class TaskUpdateWithId(TaskUpdate):
@@ -145,16 +151,21 @@ class PlanDayResponse(BaseModel):
 class HabitCreate(BaseModel):
     name: str
     icon: Optional[str] = "⭐"
+    identity: Optional[str] = None
+    difficulty: Optional[str] = "medium"
 
 
 class HabitResponse(BaseModel):
     id: str
     name: str
     icon: Optional[str]
+    identity: Optional[str]
+    difficulty: str
     created_at: Optional[str]
     is_active: bool
     streak: int = 0
     logged_today: bool = False
+    missed_days: int = 0
 
     class Config:
         from_attributes = True

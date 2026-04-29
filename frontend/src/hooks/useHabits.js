@@ -41,12 +41,12 @@ export function useHabits(idToken = null, getFreshToken = null) {
     if (idToken) fetchHabits();
   }, [idToken, fetchHabits]);
 
-  const addHabit = useCallback(async (name, icon = '⭐') => {
+  const addHabit = useCallback(async (name, icon = '⭐', identity = null, difficulty = 'medium') => {
     try {
       const res = await fetch(HABITS_URL, {
         method: 'POST',
         headers: { ...(await getHeaders()), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, icon }),
+        body: JSON.stringify({ name, icon, identity, difficulty }),
       });
       if (!res.ok) throw new Error();
       const h = await res.json();

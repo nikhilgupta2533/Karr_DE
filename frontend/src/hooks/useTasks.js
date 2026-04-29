@@ -380,12 +380,41 @@ export function useTasks(idToken = null, getFreshToken = null) {
     }
   };
 
+  // ─── Productivity Score Calculation ───────────────────────────────────────
+  const calculateProductivityScore = useCallback(() => {
+    const todayStr = getYYYYMMDD(new Date());
+    const todaysTasks = tasks.filter(t => getYYYYMMDD(new Date(t.addedAt)) === todayStr);
+    const completedToday = todaysTasks.filter(t => t.status === 'completed').length;
+    const missedToday = todaysTasks.filter(t => t.status === 'missed').length;
+    
+    let taskScore = 0;
+    if (todaysTasks.length > 0) {
+      taskScore = (completedToday / todaysTasks.length) * 100;
+    }
+
+    // Focus sessions score
+    const focusStatsStr = localStorage.getItem('karde_focus_stats');
+    let focusScore = 100;
+    if (focusStatsStr) {
+      try { focusScore = JSON.parse(focusStatsStr).score || 100; } catch {}
+    }
+
+    // Combined score (70% tasks, 30% focus) - habits could be added too
+    const totalScore = Math.round((taskScore * 0.7) + (focusScore * 0.3));
+    return Math.min(100, Math.max(0, totalScore));
+  }, [tasks]);
+
+  const [productivityScore, setProductivityScore] = useState(0);
+  useEffect(() => {
+    setProductivityScore(calculateProductivityScore());
+  }, [calculateProductivityScore]);
+
   return {
     tasks, addTask, toggleTask, deleteTask, togglePinTask,
     settings, setSettings, toast, bulkCompleteToday,
     updateTaskTitle, addTemplateTasks, updateTaskDueTime,
     updateTask, decomposeTask, planDay, toggleSubtask,
-    fetchTasks,
+    fetchTasks, productivityScore,
     clearData: async () => {
       if (confirm('Clear all?')) {
         await fetch(`${API_URL}/clear`, { method: 'POST', headers: await getHeaders() });
