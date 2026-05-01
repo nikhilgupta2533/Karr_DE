@@ -346,6 +346,21 @@ export function useTasks(idToken = null, getFreshToken = null) {
     }
   };
 
+  // ─── AI Rewrite ─────────────────────────────────────────────
+  const rewriteTaskTitle = async (title) => {
+    try {
+      const res = await fetch(`${API_URL}/rewrite`, {
+        method: 'POST', headers: await getHeaders(), body: JSON.stringify({ title }),
+      });
+      if (!res.ok) throw new Error(`Status ${res.status}`);
+      const data = await res.json();
+      return data.title || null;
+    } catch (e) {
+      showToast('Could not rewrite task. Try again.');
+      return null;
+    }
+  };
+
   // ─── AI Plan Day (Feature 6) ──────────────────────────────────────────────
   const planDay = async (pendingTasks, missedPattern = null) => {
     try {
@@ -413,7 +428,7 @@ export function useTasks(idToken = null, getFreshToken = null) {
     tasks, addTask, toggleTask, deleteTask, togglePinTask,
     settings, setSettings, toast, bulkCompleteToday,
     updateTaskTitle, addTemplateTasks, updateTaskDueTime,
-    updateTask, decomposeTask, planDay, toggleSubtask,
+    updateTask, decomposeTask, planDay, toggleSubtask, rewriteTaskTitle,
     fetchTasks, productivityScore,
     clearData: async () => {
       if (confirm('Clear all?')) {

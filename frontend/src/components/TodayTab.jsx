@@ -55,7 +55,7 @@ const PRODUCTIVITY_TIPS = [
 export function TodayTab({
   tasks, onAddTask, onToggleTask, onDeleteTask, onTogglePinTask,
   onBulkComplete, onUpdateTitle, onAddTemplate, onUpdateDueTime,
-  onUpdateTask, onDecomposeTask, onPlanDay, onToggleSubtask, soundFns, missedPattern,
+  onUpdateTask, onDecomposeTask, onPlanDay, onToggleSubtask, onRewriteTask, soundFns, missedPattern,
 }) {
   const [inputVal,       setInputVal]       = useState('');
   const [recurrence,     setRecurrence]     = useState('none');
@@ -116,7 +116,12 @@ export function TodayTab({
   );
 
   // Local task order state for drag & drop
-  const [taskOrder, setTaskOrder] = useState([]); // array of task IDs in user-defined order
+  const [taskOrder, setTaskOrder] = useState(() => {
+    try {
+      const saved = localStorage.getItem('karde_task_order');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  }); // array of task IDs in user-defined order
 
   const todayStr = getYYYYMMDD(new Date());
   const displayTasks = tasks.filter(t =>
@@ -140,9 +145,9 @@ export function TodayTab({
     if (taskOrder.length > 0) {
       const byId = Object.fromEntries(base.map(t => [t.id, t]));
       const ordered = taskOrder.map(id => byId[id]).filter(Boolean);
-      const orderedIds = new Set(taskOrder);
+      const orderedIds = new Set(ordered.map(t => t.id));
       const rest = base.filter(t => !orderedIds.has(t.id));
-      return [...ordered, ...rest];
+      return [...rest, ...ordered];
     }
     return base;
   }, [pending, completed, taskOrder]);
@@ -155,6 +160,7 @@ export function TodayTab({
       const newIndex = currentIds.indexOf(over.id);
       const newOrder = arrayMove(currentIds, oldIndex, newIndex);
       setTaskOrder(newOrder);
+      localStorage.setItem('karde_task_order', JSON.stringify(newOrder));
     }
   };
 
@@ -294,19 +300,7 @@ export function TodayTab({
     }
   };
 
-  // ── AI Rewrite helper (passed into TaskCard) ──────────────────────────────
-  const handleAIRewrite = async (title) => {
-    try {
-      const res = await fetch('/api/tasks/decompose', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: `Rewrite this task title cleanly: ${title}` }),
-      });
-      if (!res.ok) return null;
-      const data = await res.json();
-      return data.steps?.[0] || null;
-    } catch { return null; }
-  };
+
 
   // ── Toggle with sound ─────────────────────────────────────────────────────
   const handleToggle = (id) => {
@@ -577,7 +571,7 @@ export function TodayTab({
                     onUpdateTitle={onUpdateTitle}
                     onUpdateDueTime={onUpdateDueTime}
                     onUpdateTask={onUpdateTask}
-                    onAIRewrite={handleAIRewrite}
+                    onAIRewrite={onRewriteTask}
                     onFocus={jumpToFocusTask}
                     soundFns={soundFns}
                     renderMeta={() => (

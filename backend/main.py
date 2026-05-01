@@ -282,6 +282,27 @@ def bulk_update_tasks(payload: List[models.TaskUpdateWithId], db: Session = Depe
     db.commit()
     return results
 
+@app.post("/api/tasks/rewrite", response_model=models.RewriteResponse)
+async def rewrite_task(payload: models.RewriteRequest, x_api_key: Optional[str] = Header(None), x_local_date: Optional[str] = Header(None), db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
+    api_key = x_api_key if x_api_key else os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=503, detail="No Gemini API key configured")
+
+    system_prompt, user_prompt = task_parser_prompt(payload.title)
+    local_date = x_local_date if x_local_date else datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    
+    result, error_reason = await call_gemini_async(api_key, system_prompt, user_prompt, db, uid, local_date)
+    if not result:
+        raise HTTPException(status_code=503, detail=f"AI service unavailable: {error_reason}")
+    try:
+        data = validate_and_repair_json(result, dict)
+        parsed_title = data.get("title", "").strip().strip('"')
+        if not parsed_title:
+            raise ValueError()
+        return models.RewriteResponse(title=parsed_title)
+    except Exception:
+        raise HTTPException(status_code=422, detail="AI returned invalid title format. Please try again.")
+
 # NOTE: /decompose and /plan-day must be registered BEFORE /{task_id} routes
 @app.post("/api/tasks/decompose", response_model=models.DecomposeResponse)
 async def decompose_task(payload: models.DecomposeRequest, x_api_key: Optional[str] = Header(None), x_local_date: Optional[str] = Header(None), db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
@@ -425,8 +446,12 @@ def patch_task(task_id: str, payload: models.TaskUpdateRequest, db: Session = De
     db_task = db.query(models.TaskDB).filter(models.TaskDB.id == task_id, models.TaskDB.user_id == uid).first()
     if not db_task:
         raise HTTPException(status_code=404, detail="Task not found")
-    if db_task.status in {"completed", "missed"}:
-        raise HTTPException(status_code=400, detail="Cannot edit completed or missed tasks")
+    
+    previous_status = db_task.status
+    if payload.status is not None:
+        db_task.status = payload.status
+    if payload.addedAt is not None:
+        db_task.addedAt = payload.addedAt
     if payload.title is not None and payload.title.strip():
         db_task.title = payload.title.strip()
     if payload.category is not None:
@@ -443,6 +468,8 @@ def patch_task(task_id: str, payload: models.TaskUpdateRequest, db: Session = De
         db_task.subtasks = payload.subtasks
     if payload.missed_reason is not None:
         db_task.missed_reason = payload.missed_reason
+        
+    spawn_next_recurring_task(db, db_task, previous_status)
     db.commit()
     db.refresh(db_task)
     return serialize_task(db_task)

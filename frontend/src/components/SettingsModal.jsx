@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import './SettingsModal.css';
 
-export function SettingsModal({ show, onClose, settings, setSettings, clearData }) {
+export function SettingsModal({ show, onClose, settings, setSettings, clearData, deleteAccount }) {
   const [apiKey, setApiKey] = useState('');
 
   useEffect(() => {

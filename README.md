@@ -237,7 +237,7 @@ Create a `.env` file in the project root with the following variables:
 
 ```env
 # 🤖 Google Gemini API Configuration
-GOOGLE_API_KEY=your_gemini_api_key_here
+GEMINI_API_KEY=your_gemini_api_key_here
 
 # 🔐 Firebase Configuration
 FIREBASE_API_KEY=your_firebase_api_key
@@ -274,7 +274,7 @@ The backend automatically:
 1. Visit [Google AI Studio](https://aistudio.google.com/app/apikey)
 2. Click "Create API Key"
 3. Select your GCP project
-4. Copy key to `.env` as `GOOGLE_API_KEY`
+4. Copy key to `.env` as `GEMINI_API_KEY`
 
 #### 🔐 Firebase
 1. Go to [Firebase Console](https://console.firebase.google.com)
@@ -433,7 +433,7 @@ npm ci
 
 **✅ Solution**:
 - Verify `.env` file exists in project root
-- Check `GOOGLE_API_KEY` is set correctly (no extra spaces)
+- Check `GEMINI_API_KEY` is set correctly (no extra spaces)
 - Ensure Generative AI API is enabled in [Google Cloud Console](https://console.cloud.google.com)
 - Check API quotas and rate limits
 - Verify API key has appropriate permissions
@@ -527,7 +527,7 @@ Kar De is optimized for Vercel's serverless architecture.
    - In Vercel project settings → Environment Variables
    - Add all keys from `.env`:
      ```
-     GOOGLE_API_KEY
+     GEMINI_API_KEY
      FIREBASE_API_KEY
      FIREBASE_PROJECT_ID
      FIREBASE_AUTH_DOMAIN

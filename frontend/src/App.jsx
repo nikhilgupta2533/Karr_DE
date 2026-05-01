@@ -66,7 +66,7 @@ function App() {
     settings, setSettings, clearData,
     toast, confirmBulkComplete, updateTaskTitle, addTemplateTasks,
     updateTaskDueTime, updateTask, decomposeTask, planDay, toggleSubtask,
-    productivityScore
+    productivityScore, rewriteTaskTitle
   } = useTasks(idToken, getFreshToken);
 
   const habitsHook = useHabits(idToken, getFreshToken);
@@ -150,6 +150,7 @@ function App() {
               onDecomposeTask={decomposeTask}
               onPlanDay={(pending) => planDay(pending, missedPattern)}
               onToggleSubtask={toggleSubtask}
+              onRewriteTask={rewriteTaskTitle}
               soundFns={soundFns}
               missedPattern={missedPattern}
             />

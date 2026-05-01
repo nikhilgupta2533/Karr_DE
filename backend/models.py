@@ -109,6 +109,8 @@ class TaskUpdateRequest(BaseModel):
     title: Optional[str] = None
     category: Optional[str] = None
     priority: Optional[str] = None
+    status: Optional[str] = None
+    addedAt: Optional[str] = None
     recurrence: Optional[str] = None
     due_time: Optional[str] = None
     subtasks: Optional[str] = None
@@ -127,6 +129,14 @@ class DecomposeRequest(BaseModel):
 
 class DecomposeResponse(BaseModel):
     steps: List[str]
+
+
+class RewriteRequest(BaseModel):
+    title: str
+
+
+class RewriteResponse(BaseModel):
+    title: str
 
 
 class PlanTaskItem(BaseModel):
