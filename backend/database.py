@@ -2,7 +2,11 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-db_url = os.getenv("DATABASE_URL", "sqlite:///./karde_tasks.db")
+db_url = os.getenv("DATABASE_URL")
+if not db_url:
+    default_path = "/tmp/karde_tasks.db" if os.getenv("VERCEL") else "./karde_tasks.db"
+    db_url = f"sqlite:///{default_path}"
+
 # Fix for older Render/Heroku postgres URLs
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
