@@ -277,11 +277,16 @@
 
 /* ── Controls ──────────────────────────────────────────────────────────── */
 .task-controls {
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; gap: 6px;
   opacity: 0; transform: translateX(10px);
   transition: all 0.4s var(--ease-soft);
 }
 .task-card:hover .task-controls { opacity: 1; transform: translateX(0); }
+
+/* Always show controls on touch devices */
+@media (hover: none), (pointer: coarse) {
+  .task-controls { opacity: 1; transform: translateX(0); gap: 4px; }
+}
 
 .control-btn {
   background: var(--bg-glass); border: 1px solid var(--glass-border);

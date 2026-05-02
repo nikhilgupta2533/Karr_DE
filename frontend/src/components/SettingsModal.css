@@ -47,9 +47,9 @@
 
 .modal-box input {
   width: 100%;
-  background: rgba(0,0,0,0.4);
+  background: var(--bg-glass-hover);
   border: 1px solid var(--glass-border);
-  color: white;
+  color: var(--text-light);
   padding: 14px 16px;
   border-radius: 12px;
   font-family: inherit;

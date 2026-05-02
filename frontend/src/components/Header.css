@@ -83,18 +83,18 @@
   border-color: var(--accent-1);
 }
 
-/* ── Mobile header ─────────────────────────────────────────────────── */
+/* ── Mobile header ─────────────────────────────────────────── */
 @media (max-width: 420px) {
-  .app-header { padding: 14px 14px 10px; }
-  .brand h1   { font-size: 22px; }
-  .brand span { font-size: 9px; letter-spacing: 1px; }
+  .app-header { padding: 12px 14px 8px; }
+  .brand h1   { font-size: 20px; }
+  .brand span { display: none; } /* Hide subtitle on very small phones */
 
-  .header-actions { gap: 5px; }
+  .header-actions { gap: 4px; }
 
   .settings-btn,
   .sound-btn {
-    width: 34px;
-    height: 34px;
+    width: 32px;
+    height: 32px;
   }
 
   .user-avatar,
@@ -103,15 +103,22 @@
     height: 26px;
     font-size: 11px;
   }
+
+  .productivity-badge {
+    padding: 3px 8px;
+    margin-left: 6px;
+  }
+  .score-value { font-size: 14px; }
+  .score-label { display: none; }
 }
 
 @media (max-width: 360px) {
   .settings-btn,
   .sound-btn {
-    width: 30px;
-    height: 30px;
+    width: 28px;
+    height: 28px;
   }
-  .header-actions { gap: 4px; }
+  .header-actions { gap: 3px; }
 }
 
 /* -- Productivity Badge ------------------------------------------------ */

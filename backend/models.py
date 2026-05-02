@@ -55,6 +55,29 @@ class HabitLogDB(Base):
     created_at = Column(String, nullable=True)
 
 
+class FolderDB(Base):
+    __tablename__ = "folders"
+
+    id = Column(String, primary_key=True, index=True)
+    user_id = Column(String, default="default", nullable=False)
+    name = Column(String, nullable=False)
+    emoji = Column(String, nullable=True)
+    created_at = Column(String, nullable=True)
+
+
+class NoteDB(Base):
+    __tablename__ = "notes"
+
+    id = Column(String, primary_key=True, index=True)
+    folder_id = Column(String, nullable=False)
+    user_id = Column(String, default="default", nullable=False)
+    title = Column(String, nullable=True)
+    body = Column(String, nullable=True)
+    scheduled = Column(String, nullable=True) # JSON string array
+    created_at = Column(String, nullable=True)
+    updated_at = Column(String, nullable=True)
+
+
 # ─── Pydantic Schemas — Tasks ─────────────────────────────────────────────────
 
 class TaskCreate(BaseModel):
@@ -62,7 +85,7 @@ class TaskCreate(BaseModel):
     raw: str
     addedAt: str
     title: Optional[str] = None
-    category: Optional[str] = "Personal"
+    category: Optional[str] = None
     priority: Optional[str] = "medium"
     skip_ai: bool = False
     is_recurring: bool = False
@@ -186,3 +209,58 @@ class HeatmapEntry(BaseModel):
     date: str   # YYYY-MM-DD
     done: bool
     count: int = 0
+
+
+# ─── Pydantic Schemas — Notes / Ideas ────────────────────────────────────────
+
+class NoteToTaskRequest(BaseModel):
+    note_title: str
+    note_body: str
+
+class NoteToTaskResponse(BaseModel):
+    title: str
+
+
+# ─── Pydantic Schemas — Folders & Notes ──────────────────────────────────────
+
+class FolderCreate(BaseModel):
+    id: str
+    name: str
+    emoji: Optional[str] = "📁"
+    created_at: Optional[str] = None
+
+class FolderResponse(BaseModel):
+    id: str
+    name: str
+    emoji: Optional[str]
+    created_at: Optional[str]
+    user_id: Optional[str]
+    class Config:
+        from_attributes = True
+
+class NoteCreate(BaseModel):
+    id: str
+    folder_id: str
+    title: Optional[str] = ""
+    body: Optional[str] = ""
+    scheduled: Optional[str] = "[]"
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+class NoteUpdatePayload(BaseModel):
+    title: Optional[str] = None
+    body: Optional[str] = None
+    scheduled: Optional[str] = None
+    updated_at: Optional[str] = None
+
+class NoteResponse(BaseModel):
+    id: str
+    folder_id: str
+    title: Optional[str]
+    body: Optional[str]
+    scheduled: Optional[str]
+    created_at: Optional[str]
+    updated_at: Optional[str]
+    user_id: Optional[str]
+    class Config:
+        from_attributes = True

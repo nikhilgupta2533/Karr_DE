@@ -9,6 +9,7 @@ import { TodayTab } from './components/TodayTab';
 import { RecordsTab } from './components/RecordsTab';
 import { InsightsTab } from './components/InsightsTab';
 import { HabitsTab } from './components/HabitsTab';
+import { PlanTab } from './components/PlanTab';
 import { SettingsModal } from './components/SettingsModal';
 import { AuthScreen } from './components/AuthScreen';
 import { ReviewMissedModal } from './components/ReviewMissedModal';
@@ -153,6 +154,12 @@ function App() {
             />
           )}
 
+          {activeTab === 'plan' && (
+            <PlanTab
+              onAddTask={addTask}
+            />
+          )}
+
           {activeTab === 'records' && (
             <RecordsTab tasks={tasks} />
           )}
@@ -162,7 +169,7 @@ function App() {
           )}
 
           {activeTab === 'insights' && (
-            <InsightsTab tasks={tasks} />
+            <InsightsTab tasks={tasks} setActiveTab={setActiveTab} />
           )}
         </div>
       </main>

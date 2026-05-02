@@ -95,9 +95,9 @@
   padding: 20px 24px;
   border-radius: var(--radius-md);
   margin-bottom: 20px;
-  background: linear-gradient(135deg, hsla(255,40%,15%,0.6), hsla(255,40%,25%,0.8));
+  background: var(--bg-glass);
   border: 1px solid var(--glass-border-bright);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
   text-align: left;
 }
 
@@ -324,3 +324,30 @@
   font-size: 15px;
 }
 
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Mobile ─────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stat-card { padding: 14px 10px; min-height: 80px; }
+  .stat-value { font-size: 26px; }
+  .stat-label { font-size: 9px; letter-spacing: 0.5px; }
+
+  .records-stats-header h3 { font-size: 16px; }
+  .export-btn { font-size: 11px; padding: 6px 10px; }
+
+  .day-header { padding: 14px 16px; }
+  .day-label-group { font-size: 14px; gap: 8px; }
+  .day-tasks { padding: 0 16px 16px 36px; }
+  .history-task { font-size: 14px; }
+
+  .stats-message-text { font-size: 16px; }
+}
+
+@media (max-width: 360px) {
+  .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .stat-value { font-size: 22px; }
+}

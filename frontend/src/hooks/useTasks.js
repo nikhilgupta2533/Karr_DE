@@ -176,6 +176,7 @@ export function useTasks(idToken = null, getFreshToken = null) {
       due_time: options.due_time || null,
       subtasks: options.subtasks || null,
       priority: options.priority || 'medium',
+      category: options.category || null,
       loading: true,
     };
     setTasks(prev => [tempTask, ...prev]);
@@ -185,6 +186,7 @@ export function useTasks(idToken = null, getFreshToken = null) {
         body: JSON.stringify({
           id: tId, raw: rawString, addedAt: tempTask.addedAt,
           title: options.title || null,
+          category: options.category || null,
           skip_ai: Boolean(options.skip_ai),
           is_recurring: Boolean(options.is_recurring),
           recurrence: options.recurrence || null,

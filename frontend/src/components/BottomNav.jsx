@@ -1,9 +1,10 @@
-import { CalendarDays, BarChart, Activity, Flame } from 'lucide-react';
+import { CalendarDays, BarChart, Activity, Flame, Lightbulb } from 'lucide-react';
 import './BottomNav.css';
 
 export function BottomNav({ activeTab, setActiveTab }) {
   const tabs = [
     { id: 'today',   icon: Activity,    label: 'Today' },
+    { id: 'plan',    icon: Lightbulb,   label: 'Plan' },
     { id: 'records', icon: CalendarDays, label: 'Records' },
     { id: 'habits',  icon: Flame,        label: 'Habits' },
     { id: 'insights',icon: BarChart,     label: 'Insights' },

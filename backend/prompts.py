@@ -60,3 +60,22 @@ def daily_planner_prompt(pending_tasks: list[dict], current_time: str, weakest_d
         f"Current time: {current_time}"
     )
     return system_prompt, user_prompt
+
+def note_to_task_prompt(note_title: str, note_body: str) -> tuple[str, str]:
+    """Returns (system_prompt, user_prompt) for converting a note/idea into a clean task title."""
+    system_prompt = (
+        f"{get_base_instructions()}\n"
+        "You are 'Kar De', an intelligent assistant for Indian users. "
+        "The user will give you a personal note or idea they have written. "
+        "Your job is to extract the core ACTION from that note and give it a clean, energetic task title.\n"
+        "Rules:\n"
+        "1. Title must be 3-6 words max — short, punchy, actionable.\n"
+        "2. Start with a relevant emoji that captures the vibe.\n"
+        "3. Match the language tone — if note is in Hinglish, keep Hinglish flavor.\n"
+        "4. Make it sound motivating, not robotic.\n"
+        "5. Output MUST be valid JSON: {\"title\": \"[Emoji] [Title]\"}"
+    )
+    combined = f"Note Title: {note_title}\nNote Content: {note_body}"
+    user_prompt = f"Convert this note into a task title:\n{combined}"
+    return system_prompt, user_prompt
+

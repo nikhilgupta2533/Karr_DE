@@ -126,7 +126,10 @@ export function TodayTab({
   const todayStr = getYYYYMMDD(new Date());
   const displayTasks = tasks.filter(t =>
     t.status !== 'missed' &&
-    ((getYYYYMMDD(new Date(t.addedAt)) === todayStr) || t.status === 'pending')
+    !(t.category && (t.category.startsWith('Plan:') || t.category === 'Plan')) &&
+    // Only show tasks added today OR tasks that are pending and NOT in the future
+    (getYYYYMMDD(new Date(t.addedAt)) === todayStr ||
+     (t.status === 'pending' && getYYYYMMDD(new Date(t.addedAt)) <= todayStr))
   );
   const pending   = displayTasks.filter(t => t.status === 'pending');
   const completed = displayTasks.filter(t => t.status === 'completed');

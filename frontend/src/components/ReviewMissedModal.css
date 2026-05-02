@@ -39,7 +39,7 @@
 
 .review-task-card {
   padding: 16px;
-  background: hsla(0, 0%, 100%, 0.05);
+  background: var(--bg-glass);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
   font-size: 15px;

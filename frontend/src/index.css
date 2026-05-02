@@ -272,7 +272,7 @@ html, body { overflow-x: hidden; }
 
 .app-container {
   /* Safe-area inset for iPhones with home bar */
-  padding-bottom: calc(var(--nav-height) + 40px + env(safe-area-inset-bottom));
+  padding-bottom: calc(var(--nav-height) + 48px + env(safe-area-inset-bottom));
 }
 
 @media (max-width: 480px) {

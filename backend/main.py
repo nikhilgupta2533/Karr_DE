@@ -8,7 +8,7 @@ import google.generativeai as genai
 from fastapi import FastAPI, Depends, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from sqlalchemy import text
+from sqlalchemy import text, inspect
 from dotenv import load_dotenv, find_dotenv
 from typing import List, Optional
 from datetime import datetime, timezone, timedelta
@@ -19,52 +19,71 @@ from dateutil.relativedelta import relativedelta
 import logging
 import asyncio
 from backend.ai import call_gemini_async, validate_and_repair_json
-from backend.prompts import task_parser_prompt, task_decompose_prompt, daily_planner_prompt
+from backend.prompts import task_parser_prompt, task_decompose_prompt, daily_planner_prompt, note_to_task_prompt
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 Base.metadata.create_all(bind=engine)
 
-# ─── Lightweight SQLite migrations ───────────────────────────────────────────
+# ─── Lightweight startup migrations (SQLite + PostgreSQL-safe) ──────────────
 db_url = os.getenv("DATABASE_URL", "sqlite:///./karde_tasks.db")
-if "sqlite" in db_url:
-    with engine.connect() as conn:
-        # tasks table columns
-        cols = [row[1] for row in conn.execute(text("PRAGMA table_info(tasks)")).fetchall()]
-        for col, defn in [
-            ("is_pinned",   "INTEGER NOT NULL DEFAULT 0"),
-            ("is_recurring","INTEGER NOT NULL DEFAULT 0"),
-            ("recurrence",  "TEXT"),
-            ("due_time",    "TEXT"),
-            ("priority",    "TEXT DEFAULT 'medium'"),
-            ("subtasks",    "TEXT"),
-            ("user_id",     "TEXT DEFAULT 'default'"),
-            ("missed_reason", "TEXT"),
-        ]:
-            if col not in cols:
+is_sqlite = "sqlite" in db_url
+
+TASK_COLUMN_DEFS = {
+    "is_pinned": "INTEGER NOT NULL DEFAULT 0",
+    "is_recurring": "INTEGER NOT NULL DEFAULT 0",
+    "recurrence": "TEXT",
+    "due_time": "TEXT",
+    "priority": "TEXT DEFAULT 'medium'",
+    "subtasks": "TEXT",
+    "user_id": "TEXT DEFAULT 'default'",
+    "missed_reason": "TEXT",
+}
+
+HABIT_COLUMN_DEFS = {
+    "identity": "TEXT",
+    "difficulty": "TEXT DEFAULT 'medium' NOT NULL",
+}
+
+with engine.connect() as conn:
+    inspector = inspect(conn)
+
+    # Keep this resilient for older production schemas.
+    if inspector.has_table("tasks"):
+        task_cols = {c["name"] for c in inspector.get_columns("tasks")}
+        for col, defn in TASK_COLUMN_DEFS.items():
+            if col not in task_cols:
                 conn.execute(text(f"ALTER TABLE tasks ADD COLUMN {col} {defn}"))
                 conn.commit()
 
-        # habits table columns
-        cols = [row[1] for row in conn.execute(text("PRAGMA table_info(habits)")).fetchall()]
-        for col, defn in [
-            ("identity", "TEXT"),
-            ("difficulty", "TEXT DEFAULT 'medium' NOT NULL"),
-        ]:
-            if col not in cols:
+    if inspector.has_table("habits"):
+        habit_cols = {c["name"] for c in inspector.get_columns("habits")}
+        for col, defn in HABIT_COLUMN_DEFS.items():
+            if col not in habit_cols:
                 conn.execute(text(f"ALTER TABLE habits ADD COLUMN {col} {defn}"))
                 conn.commit()
 
-        # habit_logs table
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS habit_logs (
-                id TEXT PRIMARY KEY,
-                habit_id TEXT NOT NULL,
-                logged_date TEXT NOT NULL,
-                created_at TEXT
-            )
-        """))
+    # For legacy DBs, ensure habit_logs exists even when table creation predates this model.
+    if not inspector.has_table("habit_logs"):
+        if is_sqlite:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS habit_logs (
+                    id TEXT PRIMARY KEY,
+                    habit_id TEXT NOT NULL,
+                    logged_date TEXT NOT NULL,
+                    created_at TEXT
+                )
+            """))
+        else:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS habit_logs (
+                    id VARCHAR PRIMARY KEY,
+                    habit_id VARCHAR NOT NULL,
+                    logged_date VARCHAR NOT NULL,
+                    created_at VARCHAR
+                )
+            """))
         conn.commit()
 
 load_dotenv(find_dotenv(), override=False)
@@ -344,19 +363,53 @@ async def plan_day(payload: models.PlanDayRequest, x_api_key: Optional[str] = He
     except Exception:
         raise HTTPException(status_code=422, detail="AI returned invalid plan format. Please try again.")
 
+@app.post("/api/tasks/note-to-task", response_model=models.NoteToTaskResponse)
+async def note_to_task(
+    payload: models.NoteToTaskRequest,
+    x_api_key: Optional[str] = Header(None),
+    x_local_date: Optional[str] = Header(None),
+    db: Session = Depends(get_db),
+    uid: str = Depends(get_current_uid)
+):
+    """Convert a free-form note/idea into a clean, actionable task title using AI."""
+    api_key = x_api_key if x_api_key else os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=503, detail="No Gemini API key configured")
+
+    system_prompt, user_prompt = note_to_task_prompt(payload.note_title, payload.note_body)
+    local_date = x_local_date if x_local_date else datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+    result, error_reason = await call_gemini_async(api_key, system_prompt, user_prompt, db, uid, local_date)
+    if not result:
+        raise HTTPException(status_code=503, detail=f"AI unavailable: {error_reason}")
+
+    try:
+        data = validate_and_repair_json(result, dict)
+        title = data.get("title", "").strip().strip('"')
+        if not title:
+            raise ValueError("empty title")
+        return models.NoteToTaskResponse(title=title)
+    except Exception:
+        raise HTTPException(status_code=422, detail="AI returned invalid format. Please try again.")
+
+
 @app.post("/api/tasks", response_model=models.TaskResponse)
 async def create_task(task: models.TaskCreate, x_api_key: Optional[str] = Header(None), x_local_date: Optional[str] = Header(None), db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
     api_key_to_use = x_api_key if x_api_key else os.getenv("GEMINI_API_KEY")
     title = task.raw
-    category = "Personal"
+    # If a Plan: category is explicitly provided, preserve it and skip AI/guess
+    incoming_category = task.category or ""
+    is_plan_task = incoming_category.startswith("Plan:") or incoming_category == "Plan"
+    category = incoming_category if incoming_category else "Personal"
     ai_failed = False
     ai_failure_reason = None
     recurrence = normalized_recurrence(task.recurrence)
     due_time = normalized_due_time(task.due_time)
 
-    if task.skip_ai:
+    if is_plan_task or task.skip_ai:
         title = task.title if task.title else task.raw
-        category = guess_category(title)
+        if not is_plan_task:
+            category = guess_category(title)
     elif api_key_to_use:
         local_date = x_local_date if x_local_date else datetime.now(timezone.utc).strftime("%Y-%m-%d")
         system_prompt, user_prompt = task_parser_prompt(task.raw)
@@ -634,3 +687,88 @@ def get_heatmap(habit_id: str, x_local_date: Optional[str] = Header(None), db: S
     for log in logs:
         result.append(models.HeatmapEntry(date=log.logged_date, done=True, count=1))
     return result
+
+
+# ── FOLDERS ───────────────────────────────────────────────────────────────────
+
+@app.get("/api/notes/folders", response_model=List[models.FolderResponse])
+def list_folders(db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
+    return db.query(models.FolderDB).filter(models.FolderDB.user_id == uid).order_by(models.FolderDB.created_at).all()
+
+@app.post("/api/notes/folders", response_model=models.FolderResponse)
+def create_folder(folder: models.FolderCreate, db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
+    now = datetime.now(timezone.utc).isoformat()
+    db_folder = models.FolderDB(
+        id=folder.id,
+        user_id=uid,
+        name=folder.name,
+        emoji=folder.emoji or "📁",
+        created_at=folder.created_at or now,
+    )
+    db.add(db_folder)
+    db.commit()
+    db.refresh(db_folder)
+    return db_folder
+
+@app.delete("/api/notes/folders/{folder_id}")
+def delete_folder(folder_id: str, db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
+    folder = db.query(models.FolderDB).filter(models.FolderDB.id == folder_id, models.FolderDB.user_id == uid).first()
+    if not folder:
+        raise HTTPException(status_code=404, detail="Folder not found")
+    db.query(models.NoteDB).filter(models.NoteDB.folder_id == folder_id, models.NoteDB.user_id == uid).delete()
+    db.delete(folder)
+    db.commit()
+    return {"ok": True}
+
+
+# ── NOTES ─────────────────────────────────────────────────────────────────────
+
+@app.get("/api/notes", response_model=List[models.NoteResponse])
+def list_notes(folder_id: Optional[str] = None, db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
+    q = db.query(models.NoteDB).filter(models.NoteDB.user_id == uid)
+    if folder_id:
+        q = q.filter(models.NoteDB.folder_id == folder_id)
+    return q.order_by(models.NoteDB.updated_at.desc()).all()
+
+@app.post("/api/notes", response_model=models.NoteResponse)
+def create_note(note: models.NoteCreate, db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
+    now = datetime.now(timezone.utc).isoformat()
+    db_note = models.NoteDB(
+        id=note.id,
+        folder_id=note.folder_id,
+        user_id=uid,
+        title=note.title or "",
+        body=note.body or "",
+        scheduled=note.scheduled or "[]",
+        created_at=note.created_at or now,
+        updated_at=note.updated_at or now,
+    )
+    db.add(db_note)
+    db.commit()
+    db.refresh(db_note)
+    return db_note
+
+@app.put("/api/notes/{note_id}", response_model=models.NoteResponse)
+def update_note(note_id: str, update: models.NoteUpdatePayload, db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
+    note = db.query(models.NoteDB).filter(models.NoteDB.id == note_id, models.NoteDB.user_id == uid).first()
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    if update.title is not None:
+        note.title = update.title
+    if update.body is not None:
+        note.body = update.body
+    if update.scheduled is not None:
+        note.scheduled = update.scheduled
+    note.updated_at = update.updated_at or datetime.now(timezone.utc).isoformat()
+    db.commit()
+    db.refresh(note)
+    return note
+
+@app.delete("/api/notes/{note_id}")
+def delete_note(note_id: str, db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
+    note = db.query(models.NoteDB).filter(models.NoteDB.id == note_id, models.NoteDB.user_id == uid).first()
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    db.delete(note)
+    db.commit()
+    return {"ok": True}

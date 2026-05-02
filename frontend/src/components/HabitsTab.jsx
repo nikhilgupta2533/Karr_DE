@@ -52,6 +52,11 @@ function Heatmap({ logDates }) {
     }
   });
 
+  const showTooltip = (e, cell) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setTooltip({ x: rect.left + rect.width / 2, y: rect.top, date: cell.date, done: cell.done });
+  };
+
   return (
     <div className="heatmap-wrap">
       <div className="heatmap-month-row">
@@ -70,8 +75,10 @@ function Heatmap({ logDates }) {
             <div
               key={`${wi}-${di}`}
               className={`heatmap-cell ${cell.done ? 'heatmap-done' : ''} ${cell.future ? 'heatmap-future' : ''}`}
-              onMouseEnter={e => setTooltip({ x: e.clientX, y: e.clientY, date: cell.date, done: cell.done })}
+              onMouseEnter={e => showTooltip(e, cell)}
               onMouseLeave={() => setTooltip(null)}
+              onTouchStart={e => { e.preventDefault(); showTooltip(e.touches[0] ? { currentTarget: e.currentTarget } : e, cell); }}
+              onTouchEnd={() => setTimeout(() => setTooltip(null), 1200)}
             />
           ))
         )}
