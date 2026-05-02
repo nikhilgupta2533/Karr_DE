@@ -5,5 +5,7 @@ import os
 sys.path.insert(0, os.path.dirname(__file__) + "/..")
 
 from backend.main import app
+from mangum import Mangum
 
-# Vercel needs 'app' to be exposed
+# Wrap FastAPI app with Mangum for Vercel serverless
+handler = Mangum(app)
