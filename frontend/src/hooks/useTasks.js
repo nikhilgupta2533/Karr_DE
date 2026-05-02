@@ -191,6 +191,7 @@ export function useTasks(idToken = null, getFreshToken = null) {
           due_time: options.due_time || null,
           subtasks: options.subtasks || null,
           priority: options.priority || 'medium',
+          status: options.status || 'pending',
         }),
       });
       if (!res.ok) throw new Error();

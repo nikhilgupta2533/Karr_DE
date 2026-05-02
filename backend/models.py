@@ -69,6 +69,7 @@ class TaskCreate(BaseModel):
     recurrence: Optional[str] = None
     due_time: Optional[str] = None
     subtasks: Optional[str] = None  # JSON array string
+    status: Optional[str] = "pending"
 
 
 class TaskResponse(BaseModel):

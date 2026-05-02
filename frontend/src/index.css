@@ -296,3 +296,119 @@ html, body { overflow-x: hidden; }
 @media (max-width: 360px) {
   .stats-grid { grid-template-columns: 1fr 1fr; }
 }
+
+/* ─── Splash Screen ────────────────────────────────────────────────────────── */
+.splash-screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-body);
+  background-image: 
+    radial-gradient(circle at 50% 50%, hsla(270, 100%, 60%, 0.1), transparent 60%),
+    radial-gradient(circle at 50% 50%, var(--bg-body), var(--bg-body));
+  color: var(--text-light);
+  overflow: hidden;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+}
+
+.splash-logo-container {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 30px;
+}
+
+.splash-logo {
+  font-size: 48px;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  z-index: 2;
+  animation: pulseLogo 2s infinite var(--ease-soft);
+}
+
+.splash-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid transparent;
+}
+
+.splash-ring-1 {
+  border-top-color: var(--accent-1);
+  border-left-color: var(--accent-1);
+  animation: spin 1.5s linear infinite;
+  opacity: 0.7;
+}
+
+.splash-ring-2 {
+  border-bottom-color: var(--accent-2);
+  border-right-color: var(--accent-2);
+  animation: spinReverse 2s linear infinite;
+  opacity: 0.7;
+  inset: -10px;
+}
+
+.splash-title {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 8px;
+  animation: fadeIn 1s var(--ease-soft) 0.2s both;
+}
+
+.splash-subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 40px;
+  animation: fadeIn 1s var(--ease-soft) 0.4s both;
+}
+
+.splash-loading-bar {
+  width: 150px;
+  height: 4px;
+  background: hsla(0, 0%, 100%, 0.05);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  animation: fadeIn 1s var(--ease-soft) 0.6s both;
+}
+
+.splash-loading-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 50%;
+  background: linear-gradient(90deg, transparent, var(--accent-1), var(--accent-2), transparent);
+  background-size: 200% 100%;
+  animation: loadingSlide 1.5s infinite var(--ease-soft);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes spinReverse {
+  to { transform: rotate(-360deg); }
+}
+
+@keyframes pulseLogo {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px hsla(180, 100%, 50%, 0.2)); }
+  50% { transform: scale(1.1); filter: drop-shadow(0 0 20px hsla(180, 100%, 50%, 0.6)); }
+}
+
+@keyframes loadingSlide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}

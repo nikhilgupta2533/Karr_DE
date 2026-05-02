@@ -25,20 +25,17 @@ function applyTheme(t) {
 // ── Splash loader ─────────────────────────────────────────────────────────────
 function SplashLoader() {
   return (
-    <div style={{
-      minHeight: '100vh', display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center', gap: '16px',
-      background: 'var(--bg-body)', color: 'var(--text-muted)',
-    }}>
-      <div style={{
-        fontSize: '48px', lineHeight: 1,
-        background: 'linear-gradient(135deg, var(--accent-1), var(--accent-2))',
-        WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-        backgroundClip: 'text',
-      }}>✦</div>
-      <p style={{ fontSize: '14px', letterSpacing: '2px', textTransform: 'uppercase' }}>
-        Loading…
-      </p>
+    <div className="splash-screen">
+      <div className="splash-logo-container">
+        <div className="splash-logo">✦</div>
+        <div className="splash-ring splash-ring-1"></div>
+        <div className="splash-ring splash-ring-2"></div>
+      </div>
+      <h1 className="splash-title">Kar De</h1>
+      <p className="splash-subtitle">Intelligent Flow</p>
+      <div className="splash-loading-bar">
+        <div className="splash-loading-progress"></div>
+      </div>
     </div>
   );
 }

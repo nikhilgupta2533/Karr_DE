@@ -397,17 +397,7 @@ export function TodayTab({
         </div>
       )}
 
-      {/* Daily Mood Check-in */}
-      {!mood && (
-        <div className="mood-checkin glass-panel">
-          <p>How is your energy today?</p>
-          <div className="mood-options">
-            <button type="button" onClick={() => handleMoodSelect('high')} className="magnetic-btn mood-btn--high">🔥 High</button>
-            <button type="button" onClick={() => handleMoodSelect('medium')} className="magnetic-btn mood-btn--medium">⚡ Medium</button>
-            <button type="button" onClick={() => handleMoodSelect('low')} className="magnetic-btn mood-btn--low">☁️ Low</button>
-          </div>
-        </div>
-      )}
+
 
       {/* Input bar */}
       <form className={`input-bar glass-panel${showDuePicker ? ' input-bar--expanded' : ''}`} onSubmit={handleSubmit}>
