@@ -95,5 +95,22 @@ export function useHabits(idToken = null, getFreshToken = null) {
     }
   }, [idToken]);
 
-  return { habits, loading, error, fetchHabits, addHabit, removeHabit, logHabit, unlogHabit, fetchHeatmap };
+  // FIX: habit edit toggle — PATCH /api/habits/{id} with updated fields
+  const updateHabit = useCallback(async (id, fields) => {
+    try {
+      const res = await fetch(`${HABITS_URL}/${id}`, {
+        method: 'PATCH',
+        headers: { ...(await getHeaders()), 'Content-Type': 'application/json' },
+        body: JSON.stringify(fields),
+      });
+      if (!res.ok) throw new Error();
+      const updated = await res.json();
+      // Merge updated fields back into local state (preserving streak/logged_today)
+      setHabits(prev => prev.map(h => h.id === id ? { ...h, ...updated } : h));
+    } catch {
+      setError('Could not update habit');
+    }
+  }, [idToken]);
+
+  return { habits, loading, error, fetchHabits, addHabit, removeHabit, logHabit, unlogHabit, fetchHeatmap, updateHabit };
 }

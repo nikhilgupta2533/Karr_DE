@@ -109,7 +109,7 @@ function downloadHabitsCSV(habits) {
 }
 
 export function HabitsTab({ habitsHook }) {
-  const { habits, loading, error, fetchHabits, addHabit, removeHabit, logHabit, unlogHabit, fetchHeatmap } = habitsHook;
+  const { habits, loading, error, fetchHabits, addHabit, removeHabit, logHabit, unlogHabit, fetchHeatmap, updateHabit } = habitsHook;
   const [newIcon, setNewIcon] = useState('⭐');
   const [newName, setNewName] = useState('');
   const [newIdentity, setNewIdentity] = useState('');
@@ -117,8 +117,28 @@ export function HabitsTab({ habitsHook }) {
   const [heatmapData, setHeatmapData] = useState({}); // habitId → date[]
   const [selectedHabit, setSelectedHabit] = useState(null);
 
+  // FIX: habit edit toggle — track which habit is being edited and its draft values
+  const [editingHabit, setEditingHabit] = useState(null); // habit id being edited
+  const [editDraft, setEditDraft] = useState({ name: '', identity: '', difficulty: 'medium' });
 
+  const openEdit = (h) => {
+    setEditingHabit(h.id);
+    setEditDraft({ name: h.name || '', identity: h.identity || '', difficulty: h.difficulty || 'medium' });
+  };
 
+  const cancelEdit = () => {
+    setEditingHabit(null);
+    setEditDraft({ name: '', identity: '', difficulty: 'medium' });
+  };
+
+  const saveEdit = async (habitId) => {
+    await updateHabit(habitId, {
+      name: editDraft.name.trim() || undefined,
+      identity: editDraft.identity.trim(),
+      difficulty: editDraft.difficulty,
+    });
+    setEditingHabit(null); // FIX: collapse edit section after saving
+  };
 
   // Load heatmap for selected habit
   useEffect(() => {
@@ -261,13 +281,23 @@ export function HabitsTab({ habitsHook }) {
                 />
                 <span className="habit-checkmark">{h.logged_today ? '✓' : '○'}</span>
               </label>
+              {/* FIX: habit edit toggle — ▼ now opens inline edit form */}
+              <button
+                type="button"
+                className="habit-heatmap-btn magnetic-btn"
+                onClick={() => editingHabit === h.id ? cancelEdit() : openEdit(h)}
+                title="Edit habit"
+              >
+                {editingHabit === h.id ? '▲' : '▼'}
+              </button>
               <button
                 type="button"
                 className="habit-heatmap-btn magnetic-btn"
                 onClick={() => setSelectedHabit(selectedHabit === h.id ? null : h.id)}
                 title="View Heatmap"
+                style={{ fontSize: '12px' }}
               >
-                {selectedHabit === h.id ? '▲' : '▼'}
+                {selectedHabit === h.id ? '📊' : '📈'}
               </button>
               <button
                 type="button"
@@ -278,6 +308,44 @@ export function HabitsTab({ habitsHook }) {
                 <Trash2 size={14} />
               </button>
             </div>
+
+            {/* FIX: habit edit toggle — inline edit form shown when editing */}
+            {editingHabit === h.id && (
+              <div className="habit-edit-inline">
+                <div className="habit-edit-row">
+                  <input
+                    type="text"
+                    className="habit-edit-input"
+                    value={editDraft.name}
+                    onChange={e => setEditDraft(d => ({ ...d, name: e.target.value }))}
+                    placeholder="Habit name"
+                    autoFocus
+                  />
+                </div>
+                <div className="habit-edit-row">
+                  <input
+                    type="text"
+                    className="habit-edit-input"
+                    value={editDraft.identity}
+                    onChange={e => setEditDraft(d => ({ ...d, identity: e.target.value }))}
+                    placeholder="Identity (e.g. A Reader)"
+                  />
+                  <select
+                    className="habit-difficulty-select"
+                    value={editDraft.difficulty}
+                    onChange={e => setEditDraft(d => ({ ...d, difficulty: e.target.value }))}
+                  >
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                  </select>
+                </div>
+                <div className="habit-edit-actions">
+                  <button type="button" className="habit-edit-save magnetic-btn" onClick={() => saveEdit(h.id)}>Save</button>
+                  <button type="button" className="habit-edit-cancel magnetic-btn" onClick={cancelEdit}>Cancel</button>
+                </div>
+              </div>
+            )}
 
             {/* Inline heatmap for selected habit */}
             {selectedHabit === h.id && (

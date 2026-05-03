@@ -189,6 +189,14 @@ class HabitCreate(BaseModel):
     difficulty: Optional[str] = "medium"
 
 
+# FIX: habit edit — partial update schema for PATCH /api/habits/{id}
+class HabitUpdate(BaseModel):
+    name: Optional[str] = None
+    icon: Optional[str] = None
+    identity: Optional[str] = None
+    difficulty: Optional[str] = None
+
+
 class HabitResponse(BaseModel):
     id: str
     name: str

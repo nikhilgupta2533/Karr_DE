@@ -89,6 +89,14 @@ export function useTasks(idToken = null, getFreshToken = null) {
       const token = getFreshToken ? await getFreshToken() : idToken;
       if (token) headers['Authorization'] = `Bearer ${token}`;
       
+      // FIX: date auto-update — call sync-recurring on every fetch to ensure overnight tasks are properly spawned
+      try {
+        await fetch(`${API_HOST}/api/tasks/sync-recurring`, {
+          method: 'POST',
+          headers: { ...headers, 'X-Local-Date': getYYYYMMDD(new Date()) }
+        });
+      } catch (e) { console.warn('sync-recurring failed', e); }
+
       const res = await fetch(API_URL, { headers });
       if (!res.ok) {
         if (res.status === 401) {

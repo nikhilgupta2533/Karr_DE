@@ -1188,3 +1188,61 @@
 }
 .tpl-save-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px hsla(180,100%,50%,0.3); }
 
+/* FIX: task overlap — reinforce task-list as a proper vertical stack */
+.task-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  position: relative;
+  width: 100%;
+}
+
+/* FIX: primary task wrapper must NOT be position:absolute */
+.primary-task-wrapper {
+  position: relative !important;
+  width: 100% !important;
+}
+
+/* UX: score badge popover */
+.score-popover {
+  position: fixed;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 600;
+  min-width: 260px;
+  max-width: 320px;
+  padding: 18px 20px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--accent-1);
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 20px hsla(180,100%,50%,0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: popIn 0.3s var(--ease-bounce);
+  cursor: pointer;
+}
+.score-popover strong {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--accent-1);
+  letter-spacing: -0.3px;
+}
+.score-popover p {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+.score-popover-close {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 4px;
+  opacity: 0.6;
+  font-style: italic;
+}
+
+

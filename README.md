@@ -53,23 +53,10 @@ pip install -r requirements.txt
 
 Open **two separate terminal windows** from the project root (`e:\Karr_DE`) and run:
 
-<table>
-  <tr>
-    <th>Component</th>
-    <th>Command</th>
-    <th>URL</th>
-  </tr>
-  <tr>
-    <td><strong>🖥️ Backend API</strong></td>
-    <td><code>python -m uvicorn backend.main:app --reload --port 8000</code></td>
-    <td><a href="http://127.0.0.1:8000">http://127.0.0.1:8000</a></td>
-  </tr>
-  <tr>
-    <td><strong>⚛️ Frontend App</strong></td>
-    <td><code>cd frontend && npm install && npm run dev</code></td>
-    <td><a href="http://localhost:5173">http://localhost:5173</a></td>
-  </tr>
-</table>
+| Component | Command | URL |
+|-----------|---------|-----|
+| **🖥️ Backend API** | `python -m uvicorn backend.main:app --reload --port 8000` | [http://127.0.0.1:8000](http://127.0.0.1:8000) |
+| **⚛️ Frontend App** | `cd frontend && npm install && npm run dev` | [http://localhost:5173](http://localhost:5173) |
 
 ### ✅ Verify Services
 
@@ -91,8 +78,8 @@ http://127.0.0.1:8000/docs  (Interactive API docs)
 kar-de/
 ├── 📂 frontend/                    # ⚛️ React 19 + Vite SPA
 │   ├── src/
-│   │   ├── 🎨 components/         # UI components (Auth, Tasks, Habits, etc.)
-│   │   ├── 🪝 hooks/              # Custom React hooks (useAuth, useTasks, etc.)
+│   │   ├── 🎨 components/         # UI components (Today, Insights, Plan, Habits, Records)
+│   │   ├── 🪝 hooks/              # Custom React hooks (useAuth, useTasks, useNotes, useSound)
 │   │   ├── 🔧 lib/                # Firebase config & utilities
 │   │   ├── 🎭 assets/             # Images & static files
 │   │   └── main.jsx               # Entry point
@@ -100,12 +87,11 @@ kar-de/
 │   └── vite.config.js             # Build configuration
 │
 ├── 📂 backend/                     # 🐍 FastAPI Server
-│   ├── main.py                    # FastAPI app & routes
-│   ├── ai.py                      # 🤖 Gemini AI orchestration
+│   ├── main.py                    # FastAPI app & routes (Auth, Tasks, Habits, Notes)
+│   ├── ai.py                      # 🤖 Gemini AI orchestration & fallback engine
 │   ├── database.py                # 🗄️ SQLAlchemy ORM setup
-│   ├── models.py                  # Data models
-│   ├── prompts.py                 # AI prompt templates
-│   ├── test_gemini.py             # AI integration tests
+│   ├── models.py                  # Data models & dynamic migrations
+│   ├── prompts.py                 # AI prompt templates for decomposition & planning
 │   └── requirements.txt            # Python dependencies
 │
 ├── 📂 api/                         # 🚀 Vercel Serverless Entry
@@ -115,43 +101,8 @@ kar-de/
 ├── 📄 requirements.txt             # Root dependencies
 ├── 📄 package.json                 # Monorepo configuration
 ├── 📄 vercel.json                  # Deployment config
-├── 📄 PROJECT_DESCRIPTION.md       # Technical architecture
+├── 📄 PROJECT_DESCRIPTION.md       # Technical architecture blueprint
 └── 📄 README.md                    # This file
-```
-
-### Architecture Diagram
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        🌐 BROWSER                            │
-│                    localhost:5173                            │
-└────────────────┬──────────────────────────────────────────────┘
-                 │ HTTP/WebSocket
-                 ▼
-┌─────────────────────────────────────────────────────────────┐
-│              ⚛️ FRONTEND (React 19 + Vite)                  │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │ • Task Management      • Habit Tracking             │   │
-│  │ • Focus Mode           • Analytics Dashboard        │   │
-│  │ • Glassmorphic UI      • PDF/CSV Export             │   │
-│  └─────────────────────────────────────────────────────┘   │
-└────────────────┬──────────────────────────────────────────────┘
-                 │ REST API
-                 ▼
-┌─────────────────────────────────────────────────────────────┐
-│              🐍 BACKEND (FastAPI + SQLAlchemy)              │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │ • Task Decomposition   • Rate Limiting (900/day)    │   │
-│  │ • Habit Analysis       • User Isolation             │   │
-│  │ • AI Orchestration     • Token Caching (30min)      │   │
-│  └─────────────────────────────────────────────────────┘   │
-│           127.0.0.1:8000                                    │
-└────────────────┬──────────────────────────────────────────────┘
-                 │
-        ┌────────┴────────┐
-        ▼                 ▼
-    🤖 GEMINI API    💾 SQLite DB
-   (AI Models)       (Local)
 ```
 
 ---
@@ -159,520 +110,83 @@ kar-de/
 ## 🛠️ Technology Stack
 
 ### Frontend Layer
-
-| Technology | Purpose | Details |
-|------------|---------|---------|
-| **React 19** | UI Framework | Latest with concurrent rendering |
-| **Vite** | Build Tool | Lightning-fast dev server & bundling |
-| **Vanilla CSS** | Styling | Custom variables, glassmorphic design |
-| **Firebase** | Authentication | OAuth identity & token management |
-| **Chart.js** | Data Visualization | Interactive habit & analytics charts |
-| **html2canvas** | Screenshot Export | High-fidelity PNG generation |
-| **Lucide React** | Icons | Modern SVG icon library |
+- **React 19**: Latest UI framework with concurrent rendering.
+- **Vite**: Lightning-fast build tool and dev server.
+- **Glassmorphic CSS**: Premium, custom-designed UI with dynamic theme engine.
+- **Dnd-kit**: Intuitive drag-and-drop task reordering.
+- **Chart.js**: Advanced data visualization for productivity trends.
+- **Firebase REST**: Secure, lightweight authentication without heavy SDKs.
 
 ### Backend Layer
-
-| Technology | Purpose | Details |
-|------------|---------|---------|
-| **FastAPI** | Web Framework | Async-first, high performance |
-| **SQLAlchemy** | ORM | Database abstraction layer |
-| **Uvicorn** | ASGI Server | Production-grade async server |
-| **Google Generative AI** | LLM Integration | Gemini multi-model fallback |
-| **SQLite** | Local Database | Development & single-user |
-| **PostgreSQL** | Production DB | Optional for scalability |
-| **python-dateutil** | Date Logic | Recurrence calculations |
-
-### Infrastructure
-
-| Component | Technology | Use Case |
-|-----------|-----------|----------|
-| **Deployment** | Vercel | Serverless functions & static hosting |
-| **Database** | SQLite/PostgreSQL | Persistent data storage |
-| **Authentication** | Firebase + REST | Secure identity verification |
-| **APIs** | REST + WebSocket | Real-time communication |
+- **FastAPI**: Async-first Python framework for high-performance APIs.
+- **SQLAlchemy**: Powerful ORM with dynamic runtime schema patching.
+- **Google Generative AI**: Native Gemini integration with multi-model fallback.
+- **SQLite**: Local-first storage with easy portability.
 
 ---
 
 ## ⭐ Key Features
 
-### 🤖 AI-Powered Intelligence
-- **Multi-Model Fallback Strategy** - 5-tier model hierarchy (2.0-flash → 2.0-flash-lite → 1.5-flash → 1.5-flash-8b → 1.5-pro)
-- **Multilingual Task Rewriting** - Convert *"gym jaana hai"* → *"💪 Hit the Gym"*
-- **Intelligent Decomposition** - Break complex tasks into 3-5 actionable sub-steps
-- **Smart Day Planning** - AI-optimized scheduling based on historical performance
+### 🤖 Intelligent AI Core
+- **Multi-lingual Task Parsing**: Converts raw thoughts (e.g., *"gym jaana hai"*) into structured, professional tasks.
+- **Smart Decomposition**: Breaks complex goals into 3-5 actionable sub-steps automatically.
+- **Day Planning**: AI analyzes your pending list and generates an optimized execution plan for your day.
+- **Note-to-Task**: Transform long-form ideas from your journal into scheduled tasks with one click.
 
-### 📊 Behavioral Analytics
-- **GitHub-Style Heatmap** - 365-day activity visualization
-- **Streak Calculation** - Longest & current consistency sequences
-- **Performance Insights** - Identify weakest days & optimal times
-- **Data Portability** - CSV export & PDF reports
+### 📊 Advanced Productivity Analytics
+- **KPI Dashboard**: Track Total Done, Active Streaks, and your daily Discipline Score.
+- **Trend Analysis**: 7-day and 30-day performance charts to visualize your momentum.
+- **Missed Pattern Detection**: AI identifies which days you're most likely to slip and suggests scheduling adjustments.
+- **Activity Heatmap**: 365-day consistency grid (GitHub-style) to visualize your long-term commitment.
 
-### 🎯 Focus & Productivity
-- **Deep Work Mode** - Distraction-free task execution
-- **Magnetic Button Physics** - Tactile focus state feedback
-- **Web Audio Synthesis** - Real-time sound generation
-  - Triangle wave chime for task completion
-  - Sine wave bell for timer completion
-  - Square wave tick for interactions
+### 🎯 Deep Work & Focus
+- **Focus Mode**: An immersive, distraction-free environment for executing a single task.
+- **Zen Timer**: Integrated Pomodoro-style timer with visual progress rings.
+- **Focus Scoring**: Rewards consistency and tracks interruptions to calculate your "Discipline" metric.
+- **Web Audio Synthesis**: Native UI sounds (Chimes, Bells, Ticks) synthesized in real-time.
 
-### 🔐 Security & Privacy
-- **User Isolation** - All queries filtered by `user_id`
-- **Firebase Integration** - Industry-standard OAuth
-- **Cascading Deletion** - Secure account removal
-- **Token Caching** - 30-minute verification cache
+### 📝 Strategic Planning & Ideas
+- **Folders & Notes**: Organize your thoughts, project ideas, and daily reflections.
+- **AI Scheduling**: Link notes directly to your task list for seamless transition from thought to action.
+- **Templates**: Create and manage reusable task bundles for common routines like "Morning Session" or "Workout".
 
-### 📱 Modern UX
-- **Responsive Design** - Mobile-first glassmorphic UI
-- **Dark/Light Mode** - Dynamic theme engine with accents
-- **Tactile Feedback** - Smooth transitions & interactions
-- **Real-time Updates** - Live task synchronization
+### 🔐 Security & Data Portability
+- **Secure Exports**: Export your entire history as CSV or beautiful, printable PDF reports.
+- **Social Sharing**: Generate and share high-fidelity screenshots of your productivity stats.
+- **Full Data Sovereignty**: Secure account management with cascading data deletion.
 
 ---
 
 ## ⚙️ Configuration
 
-### Environment Setup
-
-Create a `.env` file in the project root with the following variables:
+Create a `.env` file in the project root:
 
 ```env
-# 🤖 Google Gemini API Configuration
-GEMINI_API_KEY=your_gemini_api_key_here
+# 🤖 Google Gemini API
+GEMINI_API_KEY=your_key
 
-# 🔐 Firebase Configuration
-FIREBASE_API_KEY=your_firebase_api_key
-FIREBASE_PROJECT_ID=your_project_id
-FIREBASE_AUTH_DOMAIN=your_auth_domain
-FIREBASE_STORAGE_BUCKET=your_bucket
-FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-FIREBASE_APP_ID=your_app_id
-
-# 💾 Database (Optional - for production)
-DATABASE_URL=postgresql://user:password@localhost/karde_db
-
-# 🔧 Application Settings (Optional)
-AI_RATE_LIMIT=900          # Daily AI call limit
-AI_CALL_SPACING=300        # Milliseconds between API calls
-CACHE_TOKEN_TTL=1800       # Firebase token cache TTL (seconds)
+# 🔐 Firebase Config
+FIREBASE_API_KEY=your_key
+FIREBASE_PROJECT_ID=your_id
+FIREBASE_AUTH_DOMAIN=your_domain
 ```
-
-### Backend Configuration Details
-
-The backend automatically:
-
-| Feature | Configuration | Default |
-|---------|---|---------|
-| **Database** | Auto-creates `karde_tasks.db` | SQLite (local) |
-| **Migrations** | Runtime schema patching | Automatic |
-| **AI Rate Limit** | Daily cap per user | 900 calls/day |
-| **Token Cache** | Firebase verification cache | 30 minutes |
-| **User Isolation** | Query filtering by `user_id` | Enabled |
-
-### Getting API Keys
-
-#### 🤖 Google Generative AI
-1. Visit [Google AI Studio](https://aistudio.google.com/app/apikey)
-2. Click "Create API Key"
-3. Select your GCP project
-4. Copy key to `.env` as `GEMINI_API_KEY`
-
-#### 🔐 Firebase
-1. Go to [Firebase Console](https://console.firebase.google.com)
-2. Create new project
-3. Register web app
-4. Copy config to `.env`
-5. Enable Authentication (Email/Google)
-
----
-
-## 👨‍💻 Development
-
-### Frontend Development
-
-```bash
-# Navigate to frontend
-cd frontend
-
-# Install dependencies
-npm install
-
-# Start dev server with hot reload (Vite)
-npm run dev
-
-# Build for production
-npm run build
-
-# Preview production build locally
-npm run preview
-
-# Run linter
-npm run lint
-```
-
-### Backend Development
-
-```bash
-# Start dev server with auto-reload
-python -m uvicorn backend.main:app --reload --port 8000
-
-# Start without reload (production-like)
-python -m uvicorn backend.main:app --port 8000
-
-# Run with specific host
-python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
-
-# Run tests
-python -m pytest backend/
-
-# Test Gemini integration
-python backend/test_gemini.py
-```
-
-### API Documentation
-
-Once backend is running, access interactive documentation:
-
-```
-http://127.0.0.1:8000/docs          # Swagger UI
-http://127.0.0.1:8000/redoc         # ReDoc
-```
-
-### Database Inspection
-
-```bash
-# Using sqlite3 CLI
-sqlite3 karde_tasks.db
-
-# List all tables
-sqlite3 karde_tasks.db "SELECT name FROM sqlite_master WHERE type='table';"
-
-# View table schema
-sqlite3 karde_tasks.db ".schema table_name"
-
-# Query sample data
-sqlite3 karde_tasks.db "SELECT * FROM tasks LIMIT 10;"
-```
-
-### Development Workflow
-
-1. **Start Backend**: `python -m uvicorn backend.main:app --reload --port 8000`
-2. **Start Frontend**: `cd frontend && npm run dev`
-3. **Make Changes**: Edit code in your IDE
-4. **Hot Reload**: Changes auto-apply (frontend) or restart (backend)
-5. **Test**: Check browser console & API docs
-6. **Commit**: Use meaningful commit messages
-
----
-
-## 🔧 Troubleshooting
-
-### Backend Fails: "ModuleNotFoundError: No module named 'backend'"
-
-**Root Cause**: Running uvicorn from inside the backend folder instead of project root
-
-**✅ Solution**:
-```bash
-# Correct: Run from project root
-cd e:\Karr_DE
-python -m uvicorn backend.main:app --reload --port 8000
-
-# ❌ Wrong: Don't run from backend folder
-cd backend
-uvicorn main:app --reload --port 8000
-```
-
-### Port Already in Use
-
-**Error**: `Address already in use` or `Port 8000/5173 is in use`
-
-**✅ Solution**:
-```bash
-# Backend on different port
-python -m uvicorn backend.main:app --reload --port 8001
-
-# Frontend on different port
-cd frontend
-npm run dev -- --port 5174
-```
-
-### Missing Python Dependencies
-
-**Error**: `ModuleNotFoundError` for FastAPI, SQLAlchemy, etc.
-
-**✅ Solution**:
-```bash
-# Reinstall all dependencies
-pip install --upgrade -r requirements.txt
-
-# Or use requirement file from backend
-pip install -r backend/requirements.txt
-
-# Verify installation
-pip list
-```
-
-### Missing Node Dependencies
-
-**Error**: `Cannot find module` in frontend
-
-**✅ Solution**:
-```bash
-cd frontend
-
-# Clean install
-rm -r node_modules package-lock.json
-npm install
-
-# Or just force reinstall
-npm ci
-```
-
-### Google API Key Issues
-
-**Error**: `API key not found` or `401 Unauthorized`
-
-**✅ Solution**:
-- Verify `.env` file exists in project root
-- Check `GEMINI_API_KEY` is set correctly (no extra spaces)
-- Ensure Generative AI API is enabled in [Google Cloud Console](https://console.cloud.google.com)
-- Check API quotas and rate limits
-- Verify API key has appropriate permissions
-
-### Firebase Authentication Not Working
-
-**Error**: `Firebase not initialized` or `401 Unauthorized`
-
-**✅ Solution**:
-- Verify all Firebase config keys in `.env`
-- Check Firebase project has Authentication enabled
-- Ensure firestore rules are properly configured
-- Verify CORS settings if calling from different origin
-
-### Database Lock Issues
-
-**Error**: `database is locked` when accessing `karde_tasks.db`
-
-**✅ Solution**:
-```bash
-# Backup current database
-cp karde_tasks.db karde_tasks.db.backup
-
-# Reset database (will lose data)
-rm karde_tasks.db
-
-# Restart backend - database will be recreated
-python -m uvicorn backend.main:app --reload --port 8000
-```
-
-### Virtual Environment Issues
-
-**Error**: `Command not found: python` or dependency problems
-
-**✅ Solution**:
-```bash
-# Recreate virtual environment
-python -m venv venv --upgrade-deps
-venv\Scripts\Activate.ps1
-
-# Reinstall all packages
-pip install -r requirements.txt
-```
-
-### Vite/Hot Reload Not Working
-
-**Error**: Changes don't reflect in browser
-
-**✅ Solution**:
-```bash
-# Hard refresh browser
-Ctrl + Shift + R (Windows/Linux)
-Cmd + Shift + R (macOS)
-
-# Restart Vite dev server
-# Press 'r' in terminal to reload
-```
-
-### CORS Errors When Calling API
-
-**Error**: `Access to XMLHttpRequest blocked by CORS policy`
-
-**✅ Solution**:
-Backend automatically allows localhost requests. If using different origin:
-
-1. Update `backend/main.py` to include your origin in CORS config
-2. Or use a proxy during development
 
 ---
 
 ## 🚀 Deployment
 
-### Vercel Deployment (Recommended)
-
-Kar De is optimized for Vercel's serverless architecture.
-
-#### Prerequisites
-- GitHub account with repo pushed
-- Vercel account (free tier available)
-- Environment variables configured
-
-#### Deployment Steps
-
-1. **Connect Repository**
-   - Go to [Vercel Dashboard](https://vercel.com)
-   - Click "New Project"
-   - Select your GitHub repository
-   - Select "Karr_DE" folder as root
-
-2. **Configure Environment Variables**
-   - In Vercel project settings → Environment Variables
-   - Add all keys from `.env`:
-     ```
-     GEMINI_API_KEY
-     FIREBASE_API_KEY
-     FIREBASE_PROJECT_ID
-     FIREBASE_AUTH_DOMAIN
-     DATABASE_URL (PostgreSQL connection)
-     ```
-
-3. **Deploy**
-   - Vercel automatically deploys on git push
-   - Or click "Deploy" button manually
-   - Check deployment status in Dashboard
-
-#### Production Architecture
-
-| Component | Deployment | URL |
-|-----------|-----------|-----|
-| **Frontend** | Vercel Static | `https://your-app.vercel.app` |
-| **Backend** | Vercel Serverless | `https://your-app.vercel.app/api` |
-| **Database** | External PostgreSQL | `postgresql://...` |
-
-#### Monitoring
-
-Monitor deployments at:
-- **Logs**: Vercel Dashboard → Deployments → Logs
-- **Errors**: Vercel Dashboard → Monitoring
-- **Analytics**: Built-in Vercel Analytics
-
-### Database Migration (Production)
-
-For production, use PostgreSQL instead of SQLite:
-
-```bash
-# Update DATABASE_URL in .env
-DATABASE_URL=postgresql://user:password@host:5432/karde_db
-
-# Run migrations (if applicable)
-python -m alembic upgrade head
-```
-
-### Custom Domain
-
-1. Go to Vercel Project Settings → Domains
-2. Add your custom domain
-3. Update DNS records as instructed
-4. SSL certificate auto-generated
-
-### Rollback
-
-```bash
-# Revert to previous deployment
-# In Vercel Dashboard: Deployments → Select version → Redeploy
-```
+Kar De is optimized for **Vercel** deployment:
+1. Connect your repository to Vercel.
+2. Set the `e:\Karr_DE` folder as the root.
+3. Configure environment variables.
+4. Push to deploy!
 
 ---
 
-## 📚 Additional Resources
-
-### Documentation
-- **[PROJECT_DESCRIPTION.md](PROJECT_DESCRIPTION.md)** - Comprehensive technical architecture & design decisions
-- **[API Docs](http://127.0.0.1:8000/docs)** - Interactive Swagger UI (when backend running)
-- **[ReDoc](http://127.0.0.1:8000/redoc)** - Alternative API documentation
-
-### External References
-- [React 19 Documentation](https://react.dev)
-- [FastAPI Documentation](https://fastapi.tiangolo.com)
-- [Vite Documentation](https://vitejs.dev)
-- [SQLAlchemy Documentation](https://www.sqlalchemy.org)
-- [Google Generative AI Docs](https://ai.google.dev)
-- [Firebase Documentation](https://firebase.google.com/docs)
-
-### Community & Support
-- **GitHub Issues** - Report bugs or request features
-- **Discussions** - Technical discussions
-- **Wiki** - Community knowledge base
-
----
-
-## 🔒 Security Best Practices
-
-- ✅ Never commit `.env` files (use `.env.example`)
-- ✅ Rotate API keys regularly
-- ✅ Use HTTPS in production (Vercel provides SSL)
-- ✅ Validate all user inputs server-side
-- ✅ Keep dependencies updated (`npm audit`, `pip list --outdated`)
-- ✅ Use environment-specific configurations
-- ✅ Enable Firebase security rules
-- ✅ Monitor API quotas and rate limits
-
----
-
-## 📊 Performance Tips
-
-### Frontend
-- Use DevTools Lighthouse for audits
-- Enable code splitting with dynamic imports
-- Optimize images & assets
-- Use CSS variables for theming (already optimized)
-
-### Backend
-- Monitor uvicorn worker threads
-- Use connection pooling for database
-- Implement caching for repeated queries
-- Monitor AI API usage vs daily limits
-
-### Database
-- Index frequently queried columns
-- Archive old records periodically
-- Use `.indexes` in SQLite CLI to check indexes
-
----
-
-## 📝 Contributing Guidelines
-
-1. **Branch Naming**: `feature/feature-name`, `fix/bug-name`
-2. **Commit Messages**: `[FEATURE/FIX/DOCS] Brief description`
-3. **Code Style**: Follow project conventions
-4. **Testing**: Write tests for new features
-5. **Documentation**: Update README for user-facing changes
-
----
-
-## 📄 License
-
-This project is **private and proprietary**. All rights reserved.
-
----
-
-## 💬 Support & Contact
-
-For issues, questions, or suggestions:
-
-1. **Check Troubleshooting** - Most issues are covered above
-2. **Review Logs** - Check terminal output and browser console
-3. **GitHub Issues** - Report bugs with reproduction steps
-4. **Documentation** - See PROJECT_DESCRIPTION.md for architecture
-
-**Last Updated**: April 2026  
-**Status**: Active Development  
-**Version**: 1.0.0
-
----
+**Last Updated**: May 2026  
+**Status**: Stable Production Build  
+**Version**: 1.1.0
 
 <div align="center">
-
 **Made with ❤️ by the Kar De Team**
-
-[⬆ Back to Top](#-kar-de---ai-powered-productivity-ecosystem)
-
 </div>

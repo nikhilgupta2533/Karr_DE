@@ -16,6 +16,7 @@ const DEFAULT_TEMPLATES = [
   { id: 't3', label: '🎯 Deep Work',      tasks: ['📵 Phone on DND', '💻 90 Min Focus Block', '🚶‍♂️ 15 Min Walk'] },
 ];
 
+// FIX: task overlap — wrapper uses display:block + width:100% to prevent stacking issues
 function SortableTaskItem({ task, isPrimary, index, ...props }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
   const style = {
@@ -23,17 +24,19 @@ function SortableTaskItem({ task, isPrimary, index, ...props }) {
     transition,
     opacity: isDragging ? 0.4 : 1,
     zIndex: isDragging ? 99 : 'auto',
-    position: 'relative'
+    position: 'relative',
+    display: 'block',   // FIX: task overlap — ensure each item is block-level, never floated
+    width: '100%',      // FIX: task overlap — fill full container width
   };
 
   return (
     <div ref={setNodeRef} style={style} className={isPrimary ? "primary-task-wrapper" : ""}>
       {isPrimary && <div className="primary-task-label">⭐️ 1 TASK RULE: DO THIS FIRST</div>}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <div {...attributes} {...listeners} className="drag-handle" style={{ cursor: 'grab', color: 'var(--text-muted)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+        <div {...attributes} {...listeners} className="drag-handle" style={{ cursor: 'grab', color: 'var(--text-muted)', flexShrink: 0 }}>
           <GripVertical size={16} />
         </div>
-        <div style={{ flex: 1, animationDelay: `${index * 0.05}s`, animation: 'slideUpFade 0.5s var(--ease-soft) both' }}>
+        <div style={{ flex: 1, minWidth: 0, animationDelay: `${index * 0.05}s`, animation: 'slideUpFade 0.5s var(--ease-soft) both' }}>
           <TaskCard task={task} {...props} />
         </div>
       </div>
@@ -87,13 +90,29 @@ export function TodayTab({
   const [planData,       setPlanData]       = useState(null);   // { message, plan[] }
   const [plannedIds,     setPlannedIds]     = useState(new Set());
 
-  // Mood Check-in
-  const [mood, setMood] = useState(() => localStorage.getItem(`mood_${getYYYYMMDD(new Date())}`) || null);
+  // UX: score badge popover
+  const [showScorePopover, setShowScorePopover] = useState(false);
+
+  // UX: daily check-in — FIX: use karde_checkin_YYYY-MM-DD key, show ONCE per day
+  const checkinKey = `karde_checkin_${getYYYYMMDD(new Date())}`;
+  const [mood, setMood] = useState(() => localStorage.getItem(checkinKey) || null);
 
   const handleMoodSelect = (selectedMood) => {
     setMood(selectedMood);
-    localStorage.setItem(`mood_${getYYYYMMDD(new Date())}`, selectedMood);
+    localStorage.setItem(checkinKey, selectedMood); // FIX: daily check-in key
   };
+
+  // BUG 3: date auto-update — re-render at midnight to refresh todayStr
+  useEffect(() => {
+    const msUntilMidnight = () => {
+      const now = new Date();
+      const midnight = new Date(now);
+      midnight.setHours(24, 0, 0, 0);
+      return midnight - now;
+    };
+    const tid = setTimeout(() => window.location.reload(), msUntilMidnight()); // FIX: date auto-update — refresh at midnight
+    return () => clearTimeout(tid);
+  }, []);
 
   const [randomTip] = useState(() => PRODUCTIVITY_TIPS[Math.floor(Math.random() * PRODUCTIVITY_TIPS.length)]);
 
@@ -123,6 +142,7 @@ export function TodayTab({
     } catch { return []; }
   }); // array of task IDs in user-defined order
 
+  // BUG 3: date auto-update — derived dynamically on every render, never cached
   const todayStr = getYYYYMMDD(new Date());
   const displayTasks = tasks.filter(t =>
     t.status !== 'missed' &&
@@ -237,6 +257,13 @@ export function TodayTab({
     return () => document.removeEventListener('mousedown', close);
   }, []);
 
+  // UX: score badge popover — listen for the event dispatched from Header
+  useEffect(() => {
+    const handler = () => setShowScorePopover(v => !v);
+    window.addEventListener('karde:open-score-popover', handler);
+    return () => window.removeEventListener('karde:open-score-popover', handler);
+  }, []);
+
   const formatTime = (value) => {
     if (!value) return '';
     try {
@@ -291,10 +318,10 @@ export function TodayTab({
     setDecomposeSteps([]);
   };
 
-  // ── AI Plan Day ───────────────────────────────────────────────────────────
+  // ── AI Plan Day — UX: loading state with descriptive text
   const handlePlanDay = async () => {
     if (planning) return;
-    setPlanning(true);
+    setPlanning(true); // UX: shows "AI is analyzing your tasks..." text while in progress
     const result = await onPlanDay(pending);
     setPlanning(false);
     if (result) {
@@ -338,6 +365,17 @@ export function TodayTab({
         </div>
       )}
 
+      {/* UX: score badge popover — clicking explains the score */}
+      {showScorePopover && (
+        <div className="score-popover glass-panel" onClick={() => setShowScorePopover(false)}>
+          <strong>Your Discipline Score</strong>
+          <p>+5 for each focus session completed.</p>
+          <p>-10 for interruptions.</p>
+          <p>Based on tasks completed vs total today.</p>
+          <span className="score-popover-close">Tap to close</span>
+        </div>
+      )}
+
       {/* Top actions row */}
       <div className="today-top-actions">
         {showPlanBtn && (
@@ -346,15 +384,19 @@ export function TodayTab({
             className={`plan-btn magnetic-btn ${planData ? 'plan-active' : ''}`}
             onClick={handlePlanDay}
             disabled={planning}
+            title="AI analyses your tasks and suggests the best order for today"
           >
             {planning ? <Loader2 size={14} className="spin-icon" /> : <Map size={14} strokeWidth={2.5} />}
-            Plan My Day
+            {/* UX: Plan Day loading state with descriptive text */}
+            {planning ? 'AI is analyzing your tasks...' : 'Plan My Day'}
           </button>
         )}
+        {/* UX: Focus Mode tooltip */}
         <button
           type="button"
           className="focus-btn magnetic-btn"
           onClick={() => { setFocusMode(true); setFocusIndex(0); }}
+          title="Enter distraction-free mode with Pomodoro timer"
         >
           <Crosshair size={14} strokeWidth={2.5} /> Focus Mode
         </button>
@@ -433,23 +475,24 @@ export function TodayTab({
               <option value="monthly">Monthly</option>
             </select>
 
-            {/* Break it down button */}
+            {/* UX: AI Sparkle tooltip */}
             <button
               type="button"
               className={`mini-icon-btn magnetic-btn decompose-btn ${decomposing ? 'active' : ''}`}
               onClick={handleDecompose}
               disabled={!inputVal.trim() || decomposing}
-              title="Break it down (AI)"
+              title="Let AI parse and structure your task"
             >
               {decomposing ? <Loader2 size={16} className="spin-icon" /> : <Sparkles size={16} />}
             </button>
 
             <div className="template-wrap" ref={templateRef} style={{ position: 'relative' }}>
+              {/* UX: Template tooltip */}
               <button
                 type="button"
                 className={`mini-icon-btn magnetic-btn ${showTemplates ? 'active' : ''}`}
                 onClick={() => setShowTemplates(s => !s)}
-                title="Templates"
+                title="Insert a pre-built task bundle (e.g. Deep Work, Study)"
               >
                 <LayoutTemplate size={18} />
               </button>

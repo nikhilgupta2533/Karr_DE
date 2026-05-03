@@ -36,7 +36,13 @@ export function Header({ onOpenSettings, theme, onToggleTheme, user, productivit
         <span>Intelligent Flow</span>
       </div>
 
-      <div className="productivity-badge" title="Daily Productivity Score">
+      {/* UX: score badge — clicking opens explanation popover via custom event */}
+      <div
+        className="productivity-badge"
+        title="Click to learn about your Discipline Score"
+        onClick={() => window.dispatchEvent(new Event('karde:open-score-popover'))}
+        style={{ cursor: 'pointer' }}
+      >
         <span className="score-label">Score</span>
         <span className="score-value">{productivityScore}</span>
       </div>

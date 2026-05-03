@@ -1,103 +1,122 @@
-# Kar De - Comprehensive Project Blueprint & Current State
+# Kar De - Comprehensive Project Blueprint & Technical Specification
 
-This document serves as the absolute source of truth for the **Kar De** project's current state. It details the exact architecture, feature implementations, UI components, and logic flows currently present in the codebase. This description is intended for developer handoff, team planning, and as context for AI assistants to plan future feature integrations.
-
----
-
-## 1. Project Overview & Philosophy
-**Kar De** is a premium, AI-orchestrated productivity ecosystem designed to bridge the gap between unstructured thoughts and execution. It leverages the Google Gemini AI ecosystem to process multilingual input (e.g., "gym jaana hai") and output professional task hierarchies. The application emphasizes deep work, seamless task management, and rigorous behavioral analytics.
+This document serves as the definitive source of truth for the **Kar De** productivity ecosystem. It provides an exhaustive breakdown of the project's architecture, feature implementations, logic flows, and technical design decisions. This specification is intended for developer onboarding, system auditing, and as a comprehensive context for AI assistants to maintain project integrity during future expansions.
 
 ---
 
-## 2. Monorepo Architecture & Tech Stack
-The project uses a high-performance monorepo structure optimized for both local development and Vercel serverless deployment.
+## 1. Core Philosophy & Value Proposition
+**Kar De** is a premium, AI-orchestrated productivity powerhouse designed to transform unstructured human thoughts into disciplined execution. The application moves beyond simple "to-do lists" by leveraging the Google Gemini AI ecosystem to provide cognitive offloading, behavioral insights, and deep-work environments.
+
+- **Cognitive Offloading**: Users can dump raw, multilingual thoughts (e.g., "kal gym jaana hai subah") which the AI structure into professional tasks.
+- **Behavioral Science**: Integrated habit tracking and discipline scoring reward consistency and penalize interruptions.
+- **Premium Aesthetics**: A "Glassmorphic" design system that feels alive, responsive, and distraction-free.
+
+---
+
+## 2. Technical Architecture & Monorepo Structure
 
 ### 2.1 Backend Layer (Python 3.10+, FastAPI)
-- **Framework**: FastAPI with asynchronous routing for high concurrency.
-- **Database**: SQLite (`karde_tasks.db`) managed via SQLAlchemy ORM.
-- **Dynamic Migrations**: `main.py` utilizes a lightweight runtime schema patching mechanism on startup to dynamically add new columns (e.g., `is_pinned`, `is_recurring`, `recurrence`, `due_time`, `subtasks`) without the overhead of heavy Alembic migrations.
-- **Authentication**: Custom Firebase token verification implemented natively via the Identity Toolkit REST API (`_verify_token_sync`). Includes an in-memory 30-minute caching mechanism (`_token_cache`) to completely avoid the bulky Firebase Admin SDK dependency.
-- **Entry Points**: 
-  - `backend/main.py`: Core FastAPI application and routing.
-  - `backend/ai.py`: Centralized Gemini AI orchestration.
-  - `backend/models.py`: SQLAlchemy schemas and Pydantic validation models.
-  - `api/index.py`: Vercel serverless entry handler.
+- **Framework**: FastAPI utilizing asynchronous request handling for high performance.
+- **Persistence**: SQLite (`karde_tasks.db`) managed via **SQLAlchemy ORM**.
+- **Dynamic Schema Evolution**: The `main.py` entry point implements a lightweight runtime migration engine. On startup, it inspects the database and dynamically injects missing columns (e.g., `is_pinned`, `subtasks`, `missed_reason`) to ensure backward compatibility without heavy migration frameworks.
+- **Native Firebase Auth**: Uses the Google Identity Toolkit REST API for token verification (`_verify_token_sync`), avoiding the heavy Firebase Admin SDK. Includes an in-memory 30-minute caching layer to minimize network overhead.
+- **Deployment**: Configured for Vercel Serverless using `api/index.py` as the handler.
 
 ### 2.2 Frontend Layer (React 19, Vite)
-- **Framework**: React 19 built with Vite.
-- **Styling**: Vanilla CSS utilizing a custom Glassmorphic design system. Features CSS Variables for dynamic Light/Dark mode and translucent surfaces (`backdrop-filter: blur(12px)`).
-- **State Management**: Highly modular Custom React Hooks (`useAuth.js`, `useTasks.js`, `useHabits.js`, `useSound.js`).
-- **Core Components**:
-  - `App.jsx`: Main orchestrator, handles PWA service worker (`/sw.js`), theming, and toast notifications.
-  - `AuthScreen.jsx`: Firebase email/Google authentication.
-  - `TodayTab.jsx`: Main dashboard featuring task inputs, Zen Timer/Focus Mode, AI Planning, and pre-defined Templates.
-  - `TaskCard.jsx`: Complex task representation supporting inline editing, subtask progress bars, pinning, recurrences, and due times.
-  - `HabitsTab.jsx`: Habit tracking interface with a 365-day consistency heatmap.
-  - `InsightsTab.jsx` & `RecordsTab.jsx`: Deep analytics, historical task views, weekly reports, and CSV/PDF/Image exports.
-  - `SettingsModal.jsx`: App configuration and account management.
+- **Framework**: React 19 (Concurrent Mode ready) built with Vite for sub-second hot reloading.
+- **Design System**: Vanilla CSS with a global variable-based theme engine. Features:
+  - **Glassmorphism**: Translucent surfaces with `backdrop-filter: blur(12px)`.
+  - **Dynamic Theming**: Real-time Light/Dark mode switching via `data-theme` attribute.
+  - **Magnetic Interactions**: Custom logic for high-fidelity button feedback.
+- **State Orchestration**: Logic is decoupled into modular custom hooks:
+  - `useAuth`: Firebase authentication and token management.
+  - `useTasks`: Task lifecycle, AI integration, and local persistence.
+  - `useHabits`: Habit tracking logic and heatmap calculations.
+  - `useNotes`: Folder-based note organization and persistence.
+  - `useSound`: Native Web Audio API synthesis (no external assets).
 
 ---
 
-## 3. Intelligent AI Core (Gemini Orchestration)
-All AI logic resides in `backend/ai.py` and `backend/prompts.py`, exposed via dedicated endpoints.
+## 3. Intelligent AI Engine (Gemini Orchestration)
 
-### 3.1 Multi-Model Fallback Engine
-To ensure near 100% uptime against rate limits or outages, `call_gemini_with_fallback` iterates sequentially through an optimized model hierarchy:
-1. `gemini-2.5-flash`
-2. `gemini-2.5-flash-lite`
-3. `gemini-2.0-flash`
-4. `gemini-2.0-flash-lite`
-5. `gemini-pro-latest`
+The "AI Brain" resides in `backend/ai.py`, providing a resilient wrapper around Google's Generative AI.
 
-### 3.2 Concurrency & Rate Limiting Controls
-- **Global API Lock**: A Python `threading.Lock()` enforces a mandatory 300ms delay between consecutive Gemini API calls to prevent `429 Too Many Requests` errors.
-- **Daily Usage Caps**: The database tracks AI usage per user per day in the `ai_usage` table. A hard limit of 900 calls per day (`DAILY_AI_LIMIT`) is enforced.
-- **Resilient JSON Parsing**: `validate_and_repair_json` automatically strips Markdown code fences and repairs malformed AI outputs to ensure system stability.
+### 3.1 Resiliency & Performance
+- **Multi-Model Fallback**: Automatically cascades through `gemini-2.0-flash`, `gemini-2.0-flash-lite`, and `gemini-pro-latest` to ensure availability.
+- **Concurrency Control**: A global `threading.Lock()` enforces a 300ms inter-call delay, preventing rate-limiting (429) errors during rapid user interaction.
+- **Usage Governance**: Tracks `ai_usage` in the database with a `DAILY_AI_LIMIT` (default 900) per user.
+- **Output Sanitization**: `validate_and_repair_json` utilizes regex to strip markdown fences and repair common LLM syntax errors before returning to the frontend.
 
-### 3.3 Core AI Capabilities
-- **Task Parsing (`/api/tasks`)**: Converts raw, multi-lingual user input into structured JSON containing clean titles and auto-categorizations.
-- **Task Decomposition (`/api/tasks/decompose`)**: Breaks down complex tasks into 3-5 actionable sub-steps. The frontend allows users to preview and uncheck specific steps before creation.
-- **Day Planning (`/api/tasks/plan-day`)**: Analyzes pending tasks, the user's historical weakest days, and the current time to output an optimal execution order with AI-generated reasoning.
-- **Title Rewriting**: Users can invoke AI inline within `TaskCard.jsx` to professionally rewrite task titles.
+### 3.2 Key AI Workflows
+- **Natural Language Parsing**: Converts raw input into clean titles and auto-guesses categories (Work, Health, Home, Personal).
+- **Smart Decomposition**: Breaks complex tasks into 3-5 actionable sub-steps. Users can preview, edit, or uncheck these steps before committing.
+- **Day Planning (`/api/tasks/plan-day`)**: Analyzes the current task list, the current time, and historical "missed patterns" to output an optimized execution order with AI reasoning.
+- **Note-to-Task**: AI reads long-form notes/journal entries and suggests a professional task title for scheduling.
+- **Inline Title Rewriting**: Professionalizes existing task titles with a single click.
 
 ---
 
-## 4. Comprehensive Feature Sets
+## 4. Feature Ecosystem: Deep Dive
 
-### 4.1 Task Lifecycle & Inline Management
-- **Task Attributes**: ID, raw input, title, category, priority, status (pending, completed, missed), creation/completion timestamps, pinned state, recurring logic, due time, and JSON-serialized subtasks.
-- **Subtask Progress**: Visual progress bars within task cards update in real-time as subtasks are checked off.
-- **Inline Editor**: Double-clicking a task opens a quick editor. A full edit form allows modifying category, priority, recurrence, due time, and invoking the AI title rewriter.
-- **Templates**: Pre-defined task bundles (e.g., "Morning Routine", "Work Day") can be injected with a single click.
-- **Midnight Synchronization**: When tasks are fetched (`/api/tasks`), the backend checks for pending tasks from previous days. It automatically marks them as `missed` and invokes `spawn_next_recurring_task()` to create the next occurrence for recurring tasks.
+### 4.1 Advanced Task Management
+- **The "1 TASK RULE"**: Visually prioritizes the top pending task as the absolute focus.
+- **Recurring Logic**: Support for Daily, Weekly, and Monthly recurrence. Midnight synchronization automatically spawns the next occurrence when the previous one is completed or missed.
+- **Rich Task Attributes**: Pinned state, due times, priority levels, and JSON-serialized subtask lists.
+- **Interactive Lifecycle**: Toggle completion, professional editor for fine-tuning, and drag-and-drop reordering via `@dnd-kit`.
+- **Templates**: Pre-defined task bundles (e.g., "Deep Work", "Study Session") that can be customized and injected instantly.
 
-### 4.2 Focus Mode & Zen Timer
-- **Deep Work Environment**: An immersive overlay (`Focus Mode`) isolates the user with one task at a time.
-- **Zen Timer**: A built-in 25-minute Pomodoro-style countdown timer with pause/resume functionality.
-- **Audio Synthesis**: `useSound.js` utilizes the native Web Audio API to synthesize UI sounds locally (Triangle wave chime for completion, Sine wave bell for timers, Square wave tick for interactions), eliminating the need for bulky audio assets.
+### 4.2 Focus Mode & Zen Ecosystem
+- **Immersive Environment**: Hides all UI distractions to show only the current task and its sub-steps.
+- **Zen Timer (Pomodoro)**: A 25-minute visual progress ring with pulse animations.
+- **Focus Scoring**: A behavioral metric (0-100) that increases with completed sessions (+5) and decreases with interruptions (-10).
+- **Session Summaries**: Provides a "Post-Game" breakdown of time focused and objectives achieved.
 
-### 4.3 Habit & Consistency Tracking
-- **Habit Entities**: Tracked independently with custom names and emojis.
-- **Streak Calculation**: The backend dynamically walks backward from the current date through `habit_logs` to calculate the active streak.
-- **GitHub-Style Heatmap**: The frontend renders a 365-day consistency grid reflecting `habit_logs` density.
+### 4.3 Behavioral Insights & Analytics
+- **KPI Stat Cards**: Real-time tracking of Total Done, Streak, Today's completions, and the Discipline Score.
+- **Multi-Dimensional Charts**:
+  - **7-Day Bar Chart**: Done vs. Missed tasks for weekly performance tracking.
+  - **30-Day Trend**: Line chart showing completion momentum over time.
+  - **Performance Rings**: Radial gauges for Day Streak, Weekly Rate, and Best Day.
+- **Pattern Analysis**: Identifies the specific day of the week (e.g., "Tuesdays") where tasks tend to slip, offering AI-driven scheduling advice.
+- **Activity Heatmap**: A 7-week grid reflecting the density of task completions.
 
-### 4.4 Analytics, Exports & Reporting
-- **Records & Weekly Review**: If the current day is Sunday, `RecordsTab.jsx` generates a weekly review highlighting the best day, most missed category, and streak status.
-- **CSV Export**: Native generation of comprehensive CSV data files mapping out all task attributes.
-- **PDF Generation**: Generates beautiful, styled HTML productivity reports (including bar charts and category breakdowns) and invokes native browser PDF printing.
-- **Shareable Stats**: Integrates `html2canvas` to take high-fidelity screenshots of productivity stats for social sharing via the native `navigator.share` API.
+### 4.4 Habits: Long-term Consistency
+- **Identity Building**: Habits are linked to an identity (e.g., "I am a Reader") to reinforce behavioral psychology.
+- **Difficulty Grading**: Easy, Medium, and Hard habits with varied impacts on the focus score.
+- **52-Week Heatmap**: Full-year consistency tracking for every individual habit.
+- **Streak Risk Detection**: Visual warnings (⚠️) when a habit is at risk of breaking due to missed days.
 
-### 4.5 Security & Data Sovereignty
-- **Restricted-Identity Pattern**: Custom, lightweight token verification with in-memory caching.
-- **User Isolation**: Strict filtering by `user_id` across all database operations.
-- **Cascading Account Deletion**: The `/api/account` endpoint safely purges a user's tasks, habits, and logs from the database, ensuring complete data sovereignty.
+### 4.5 Planning & Note-taking (Plan Tab)
+- **Folder Organization**: Categorize thoughts into folders with custom emojis.
+- **Premium Writing Surface**: Utilizes the *Caveat* Google Font for a personal, handwritten journal aesthetic.
+- **AI-Linked Scheduling**: Bridge the gap between a "thought" and a "task" by scheduling notes into the main task list.
+
+### 4.6 Premium UX & Audio
+- **Web Audio Synthesis**: `useSound.js` synthesizes Triangle (chime), Sine (bell), and Square (tick) waves in real-time, ensuring a zero-asset footprint.
+- **Daily Check-In**: A mood-tracking modal that provides tailored productivity tips based on current energy levels (Focused, Tired, Lazy).
+- **Social Sharing**: Generates high-fidelity screenshots of productivity stats using `html2canvas` for sharing via the Web Share API.
 
 ---
 
-## 5. Development & Deployment Configuration
-- **Local Dev**: Run backend via `uvicorn backend.main:app --reload --port 8000` and frontend via `npm run dev`.
-- **Environment Variables**: Requires `GEMINI_API_KEY`, `FIREBASE_API_KEY`, `FIREBASE_PROJECT_ID`. Optional: `DATABASE_URL`, `CORS_ORIGINS`.
-- **Vercel Production**: Managed via `vercel.json` rewrites, mapping `/api/(.*)` to the FastAPI serverless handler (`api/index.py`) and letting Vite handle the static frontend routing. PWA capabilities are enabled via `sw.js`.
+## 5. Security & Data Management
+- **Firebase REST Auth**: Lightweight and secure. No client-side storage of sensitive credentials.
+- **Data Sovereignty**: A "Delete Account" feature performs a cascading deletion of all tasks, habits, logs, folders, and notes from the database.
+- **CSV/PDF Export**: Users can export their entire productivity history as structured CSV or professionally styled PDF reports.
 
 ---
-**Current Status**: Highly stable production build. Comprehensive logging, analytics, and deep-work mechanisms are fully implemented. Ready for team review and subsequent feature expansion.
+
+## 6. Development & Deployment Roadmap
+
+### 6.1 Environment Configuration
+Required variables in `.env`:
+- `GEMINI_API_KEY`: For all AI features.
+- `FIREBASE_API_KEY` & `FIREBASE_PROJECT_ID`: For authentication.
+
+### 6.2 Deployment Strategy
+- **Frontend**: Deployed to Vercel as a static Vite application.
+- **Backend**: Deployed as Vercel Serverless Functions. `vercel.json` rewrites all `/api/*` traffic to the FastAPI handler.
+- **Database**: SQLite in development; compatible with PostgreSQL for production scale.
+
+---
+**Project Status**: v1.1.0 Stable. All core behavioral, AI, and analytic systems are operational.
+**Last Updated**: May 2026.

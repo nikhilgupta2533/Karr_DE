@@ -551,6 +551,37 @@ def clear_tasks(db: Session = Depends(get_db), uid: str = Depends(get_current_ui
     db.commit()
     return {"status": "cleared"}
 
+# FIX: date auto-update — dedicated midnight sync endpoint
+# Marks overdue pending tasks as missed and spawns next recurring occurrences.
+# Called by frontend on app open (and again at midnight via the reload trigger).
+@app.post("/api/tasks/sync-recurring")
+def sync_recurring(
+    db: Session = Depends(get_db),
+    uid: str = Depends(get_current_uid),
+    x_local_date: Optional[str] = Header(None),
+):
+    today_str = x_local_date or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    all_pending = db.query(models.TaskDB).filter(
+        models.TaskDB.user_id == uid,
+        models.TaskDB.status == "pending",
+    ).all()
+    spawned = 0
+    missed = 0
+    for t in all_pending:
+        t_date = t.addedAt.split("T")[0] if t.addedAt else today_str
+        if t_date < today_str:
+            prev_status = t.status
+            t.status = "missed"
+            missed += 1
+            # FIX: date auto-update — correctly compute next due date per recurrence type:
+            # Daily → +1 day, Weekly → +7 days, Monthly → +1 month (same day)
+            spawn_next_recurring_task(db, t, prev_status)
+            spawned += 1
+    if missed:
+        db.commit()
+    return {"status": "synced", "missed": missed, "spawned": spawned, "today": today_str}
+
+
 @app.delete("/api/account")
 def delete_account(db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
     if uid == "default":
@@ -638,6 +669,47 @@ def delete_habit(habit_id: str, db: Session = Depends(get_db), uid: str = Depend
     h.is_active = False
     db.commit()
     return {"status": "deleted"}
+
+# FIX: habit edit toggle — PATCH endpoint for updating habit fields
+@app.patch("/api/habits/{habit_id}", response_model=models.HabitResponse)
+def update_habit(habit_id: str, payload: models.HabitUpdate, db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
+    h = db.query(models.HabitDB).filter(models.HabitDB.id == habit_id, models.HabitDB.user_id == uid).first()
+    if not h:
+        raise HTTPException(status_code=404, detail="Habit not found")
+    if payload.name is not None and payload.name.strip():
+        h.name = payload.name.strip()
+    if payload.icon is not None:
+        h.icon = payload.icon
+    if payload.identity is not None:
+        h.identity = payload.identity
+    if payload.difficulty is not None and payload.difficulty in {"easy", "medium", "hard"}:
+        h.difficulty = payload.difficulty
+    db.commit()
+    db.refresh(h)
+    # Recalculate streak/logged_today for response
+    today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    logs = db.query(models.HabitLogDB).filter(models.HabitLogDB.habit_id == h.id).all()
+    logged_dates = sorted(set(l.logged_date for l in logs))
+    logged_today = today_str in logged_dates
+    streak = 0
+    if logged_dates:
+        check_date = datetime.strptime(today_str, "%Y-%m-%d")
+        if today_str not in logged_dates:
+            check_date -= timedelta(days=1)
+        while True:
+            ds = check_date.strftime("%Y-%m-%d")
+            if ds in logged_dates:
+                streak += 1
+                check_date -= timedelta(days=1)
+            else:
+                break
+    return models.HabitResponse(
+        id=h.id, name=h.name, icon=h.icon or "⭐",
+        identity=h.identity, difficulty=h.difficulty,
+        created_at=h.created_at, is_active=h.is_active,
+        streak=streak, logged_today=logged_today, missed_days=0
+    )
+
 
 @app.post("/api/habits/{habit_id}/log")
 def log_habit(habit_id: str, date: Optional[str] = None, x_local_date: Optional[str] = Header(None), db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):

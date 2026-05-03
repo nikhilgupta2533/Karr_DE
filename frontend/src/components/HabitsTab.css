@@ -298,3 +298,63 @@
   gap: 12px;
 }
 .habits-error { color: var(--danger); }
+
+/* FIX: habit edit toggle — inline edit form styles */
+.habit-edit-inline {
+  width: 100%;
+  padding-top: 12px;
+  border-top: 1px solid var(--glass-border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: fadeIn 0.3s var(--ease-soft);
+}
+.habit-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.habit-edit-input {
+  flex: 1;
+  background: var(--bg-glass-hover);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  color: var(--text-light);
+  font-size: 13px;
+  font-family: inherit;
+  padding: 8px 12px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.habit-edit-input:focus { border-color: var(--accent-1); }
+.habit-edit-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.habit-edit-save {
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+  color: var(--bg-body);
+  border: none;
+  padding: 7px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.habit-edit-save:hover { transform: scale(1.03); }
+.habit-edit-cancel {
+  background: var(--bg-glass);
+  border: 1px solid var(--glass-border);
+  color: var(--text-muted);
+  padding: 7px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.habit-edit-cancel:hover { color: var(--text-light); }
+
