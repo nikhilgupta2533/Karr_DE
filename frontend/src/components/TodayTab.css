@@ -52,6 +52,22 @@
   border-color: var(--accent-1);
 }
 
+.checkin-later-btn {
+  margin-top: 10px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.checkin-later-btn:hover {
+  color: var(--text-light);
+}
+
 .mood-suggestion {
   font-size: 13px;
   color: var(--accent-1);
@@ -61,6 +77,18 @@
   padding: 8px;
   background: hsla(180, 100%, 50%, 0.05);
   border-radius: 8px;
+}
+
+.checkin-reopen-btn {
+  margin-left: 10px;
+  border: 1px solid var(--glass-border);
+  border-radius: 100px;
+  background: var(--bg-glass);
+  color: var(--text-light);
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .focus-btn {

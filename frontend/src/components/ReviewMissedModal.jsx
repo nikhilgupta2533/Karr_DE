@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { X, AlertCircle } from 'lucide-react';
 import './ReviewMissedModal.css';
 
@@ -9,33 +9,29 @@ const ACTIONS = [
 ];
 
 export function ReviewMissedModal({ tasks, updateTask }) {
-  const [missedTasks, setMissedTasks] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [dismissedIds, setDismissedIds] = useState(() => new Set());
+  const [reviewedCount, setReviewedCount] = useState(0);
+  const [isBusy, setIsBusy] = useState(false);
 
-  useEffect(() => {
-    // Find all missed tasks that don't have a reason yet
-    const pendingMissed = tasks.filter(t => t.status === 'missed' && !t.missed_reason);
-    if (pendingMissed.length > 0) {
-      setMissedTasks(pendingMissed);
-    } else {
-      setMissedTasks([]);
-    }
-  }, [tasks]);
-
+  const missedTasks = useMemo(
+    () => tasks.filter((t) => t.status === 'missed' && !t.missed_reason && !dismissedIds.has(t.id)),
+    [tasks, dismissedIds]
+  );
   if (missedTasks.length === 0) return null;
 
-  const currentTask = missedTasks[currentIndex];
+  const currentTask = missedTasks[0];
+  const totalCount = reviewedCount + missedTasks.length;
 
   const handleAction = async (actionId) => {
+    if (!currentTask || isBusy) return;
+    setIsBusy(true);
     const taskToUpdate = currentTask;
-    
-    // Optimistically move to next
-    if (currentIndex < missedTasks.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    } else {
-      setMissedTasks([]); // close modal
-      setCurrentIndex(0);
-    }
+    setDismissedIds(prev => {
+      const next = new Set(prev);
+      next.add(taskToUpdate.id);
+      return next;
+    });
+    setReviewedCount(c => c + 1);
 
     if (actionId === 'today') {
       await updateTask(taskToUpdate.id, { 
@@ -54,23 +50,37 @@ export function ReviewMissedModal({ tasks, updateTask }) {
     } else if (actionId === 'drop') {
       await updateTask(taskToUpdate.id, { missed_reason: 'dropped' });
     }
+    setIsBusy(false);
   };
 
   const handleDismissAll = async () => {
-    // If they skip, we just mark the remaining ones as skipped so they don't get bothered again
-    const remaining = missedTasks.slice(currentIndex);
-    setMissedTasks([]);
+    if (isBusy) return;
+    setIsBusy(true);
+    const remaining = [...missedTasks];
+    setDismissedIds(prev => {
+      const next = new Set(prev);
+      remaining.forEach((t) => next.add(t.id));
+      return next;
+    });
+    setReviewedCount(c => c + remaining.length);
     for (const t of remaining) {
       await updateTask(t.id, { missed_reason: 'skipped_review' });
     }
+    setIsBusy(false);
   };
 
   if (!currentTask) return null;
 
   return (
-    <div className="modal-overlay">
+    <div className="modal-overlay review-overlay" role="dialog" aria-modal="true" aria-label="Review missed tasks">
       <div className="review-modal-content glass-panel">
-        <button type="button" className="modal-close" onClick={handleDismissAll}>
+        <button
+          type="button"
+          className="review-modal-close"
+          onClick={handleDismissAll}
+          disabled={isBusy}
+          aria-label="Dismiss all missed tasks"
+        >
           <X size={20} />
         </button>
 
@@ -80,7 +90,7 @@ export function ReviewMissedModal({ tasks, updateTask }) {
         </div>
 
         <p className="review-subtitle">
-          Task {currentIndex + 1} of {missedTasks.length} missed yesterday. What's the plan?
+          Task {reviewedCount + 1} of {totalCount} missed yesterday. What's the plan?
         </p>
 
         <div className="review-task-card glass-panel">
@@ -94,6 +104,7 @@ export function ReviewMissedModal({ tasks, updateTask }) {
               type="button"
               className="action-btn magnetic-btn"
               onClick={() => handleAction(a.id)}
+              disabled={isBusy}
             >
               <span className="action-label">{a.label}</span>
               <span className="action-sub">{a.sub}</span>
@@ -101,8 +112,8 @@ export function ReviewMissedModal({ tasks, updateTask }) {
           ))}
         </div>
         
-        <button type="button" className="skip-btn" onClick={handleDismissAll}>
-          Skip & Dismiss All
+        <button type="button" className="skip-btn" onClick={handleDismissAll} disabled={isBusy}>
+          {isBusy ? 'Saving...' : 'Skip & Dismiss All'}
         </button>
       </div>
     </div>

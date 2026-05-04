@@ -96,6 +96,7 @@ export function TodayTab({
   // UX: daily check-in — FIX: use karde_checkin_YYYY-MM-DD key, show ONCE per day
   const checkinKey = `karde_checkin_${getYYYYMMDD(new Date())}`;
   const [mood, setMood] = useState(() => localStorage.getItem(checkinKey) || null);
+  const [checkinDismissed, setCheckinDismissed] = useState(false);
 
   const handleMoodSelect = (selectedMood) => {
     setMood(selectedMood);
@@ -348,7 +349,7 @@ export function TodayTab({
   return (
     <div className="view-content">
       {/* Daily Check-In */}
-      {!mood ? (
+      {!mood && !checkinDismissed ? (
         <div className="daily-checkin glass-panel">
           <h3>How are you feeling today?</h3>
           <div className="mood-buttons">
@@ -356,12 +357,28 @@ export function TodayTab({
             <button type="button" className="magnetic-btn mood-btn" onClick={() => handleMoodSelect('Tired')}>🔋 Tired</button>
             <button type="button" className="magnetic-btn mood-btn" onClick={() => handleMoodSelect('Lazy')}>🥱 Lazy</button>
           </div>
+          <button
+            type="button"
+            className="checkin-later-btn"
+            onClick={() => setCheckinDismissed(true)}
+          >
+            Ask me later
+          </button>
         </div>
       ) : (
         <div className="mood-suggestion">
           {mood === 'Focused' && "Great energy today. Tackle the hard tasks first. 🔥"}
           {mood === 'Tired' && "Take it easy today. Focus only on the essential tasks. 🔋"}
           {mood === 'Lazy' && "Break things down into micro-steps. Just start. 🥱"}
+          {!mood && (
+            <button
+              type="button"
+              className="checkin-reopen-btn magnetic-btn"
+              onClick={() => setCheckinDismissed(false)}
+            >
+              Open daily check-in
+            </button>
+          )}
         </div>
       )}
 
