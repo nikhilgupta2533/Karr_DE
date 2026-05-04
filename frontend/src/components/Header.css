@@ -1,13 +1,11 @@
 /* ═══════════════════════════════════════════════════════
-   App Header — 2-column flex (brand | right)
-   Fits perfectly inside the 500px app container
+   App Header  —  2-row layout, always fits any screen
    ═══════════════════════════════════════════════════════ */
 .app-header {
-  padding: 12px 16px;
+  padding: 10px 16px 8px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  flex-direction: column;
+  gap: 8px;
   position: sticky;
   top: 0;
   z-index: 100;
@@ -16,7 +14,17 @@
   border-bottom: 1px solid var(--glass-border);
 }
 
-/* ── Brand ─────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════
+   ROW 1 — Brand (left) | Icon buttons (right)
+   ══════════════════════════════════════════════════════ */
+.header-row1 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* Brand */
 .brand {
   display: flex;
   flex-direction: column;
@@ -24,9 +32,9 @@
 }
 
 .brand h1 {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 800;
-  letter-spacing: -1px;
+  letter-spacing: -1.2px;
   background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -43,31 +51,100 @@
   margin-top: 2px;
 }
 
-/* ── Right section: clock + badge + buttons ────────── */
-.header-right {
+/* Action buttons strip */
+.header-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-width: 0; /* allow shrinking */
+  gap: 5px;
 }
 
-/* ── Live Clock ────────────────────────────────────── */
-.live-clock {
+.hdr-btn {
+  background: var(--bg-glass);
+  border: 1px solid var(--glass-border);
+  color: var(--text-muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 3px;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background 0.2s, transform 0.15s;
+  flex-shrink: 0;
+}
+
+.hdr-btn:hover {
+  color: var(--text-light);
+  border-color: var(--glass-border-bright);
+  background: var(--bg-glass-hover);
+  transform: translateY(-1px);
+}
+
+.hdr-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+/* User avatar */
+.user-avatar-wrap { display: flex; align-items: center; flex-shrink: 0; }
+
+.user-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid var(--glass-border-bright);
+  object-fit: cover;
+}
+
+.user-avatar--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 50%;
+}
+
+/* ══════════════════════════════════════════════════════
+   ROW 2 — Clock (flex-1) | Score badge
+   ══════════════════════════════════════════════════════ */
+.header-row2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ── Live Clock ──────────────────────────────────────── */
+.live-clock {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   background: var(--bg-glass);
   border: 1px solid var(--glass-border);
   border-radius: 14px;
-  padding: 6px 12px;
+  padding: 7px 14px;
   position: relative;
   overflow: hidden;
-  flex-shrink: 0;
-  /* subtle glow animation */
-  box-shadow: 0 0 0 0 transparent;
   animation: clockGlow 4s ease-in-out infinite alternate;
   transition: border-color 0.3s, transform 0.2s;
+}
+
+.live-clock::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg,
+    hsla(180, 100%, 50%, 0.04),
+    hsla(260, 80%, 65%, 0.03));
+  pointer-events: none;
+}
+
+@keyframes clockGlow {
+  from { box-shadow: 0 0 0px transparent; }
+  to   { box-shadow: 0 0 16px hsla(180, 100%, 50%, 0.18); }
 }
 
 .live-clock:hover {
@@ -75,22 +152,24 @@
   transform: translateY(-1px);
 }
 
-@keyframes clockGlow {
-  from { box-shadow: 0 0 8px hsla(180, 100%, 50%, 0.08); }
-  to   { box-shadow: 0 0 18px hsla(180, 100%, 50%, 0.22), 0 0 4px hsla(123, 80%, 65%, 0.08) inset; }
+/* clock body (time + bar stacked) */
+.clock-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
-/* time row */
+/* HH:MM + sec block */
 .clock-time-row {
   display: flex;
   align-items: center;
   gap: 5px;
 }
 
-/* HH:MM big digits */
 .clock-hm {
   font-family: 'Space Mono', 'JetBrains Mono', monospace;
-  font-size: 19px;
+  font-size: 20px;
   font-weight: 700;
   letter-spacing: 1px;
   background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
@@ -102,16 +181,13 @@
 .clock-colon {
   display: inline-block;
   -webkit-text-fill-color: var(--accent-1);
-  transition: opacity 0.1s;
   margin: 0 1px;
   opacity: 1;
+  transition: opacity 0.1s;
 }
 
-.clock-colon--off {
-  opacity: 0.15;
-}
+.clock-colon--off { opacity: 0.15; }
 
-/* small block: AM/PM above seconds */
 .clock-sec-block {
   display: flex;
   flex-direction: column;
@@ -125,8 +201,8 @@
   font-weight: 800;
   letter-spacing: 1.5px;
   color: var(--accent-1);
-  line-height: 1.1;
   text-transform: uppercase;
+  line-height: 1.1;
 }
 
 .clock-ss {
@@ -155,30 +231,36 @@
   box-shadow: 0 0 4px var(--accent-1);
 }
 
-/* date label */
+/* date label — flex-1 lets it take remaining space */
 .clock-date {
-  font-size: 9px;
+  flex: 1;
+  min-width: 0;
+  font-size: 9.5px;
   font-weight: 600;
   letter-spacing: 1.5px;
   text-transform: uppercase;
   color: var(--text-muted);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   line-height: 1;
+  text-align: center;
 }
 
-/* ── Productivity Badge ────────────────────────────── */
+/* ── Productivity Badge ───────────────────────────────── */
 .productivity-badge {
   display: flex;
   flex-direction: column;
   align-items: center;
   background: var(--bg-glass);
   border: 1px solid var(--accent-1);
-  padding: 4px 10px;
+  padding: 5px 12px;
   border-radius: 12px;
   cursor: pointer;
   flex-shrink: 0;
   animation: scorePulse 3s ease-in-out infinite alternate;
   transition: transform 0.2s, background 0.2s;
+  min-width: 52px;
 }
 
 .productivity-badge:hover {
@@ -200,89 +282,32 @@
 }
 
 .score-value {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 800;
   color: var(--accent-1);
   line-height: 1.2;
 }
 
-/* ── Action buttons ────────────────────────────────── */
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.hdr-btn {
-  background: var(--bg-glass);
-  border: 1px solid var(--glass-border);
-  color: var(--text-muted);
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: color 0.2s, border-color 0.2s, background 0.2s;
-  flex-shrink: 0;
-}
-
-.hdr-btn:hover {
-  color: var(--text-light);
-  border-color: var(--glass-border-bright);
-  background: var(--bg-glass-hover);
-}
-
-.hdr-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-/* ── User avatar ───────────────────────────────────── */
-.user-avatar-wrap { display: flex; align-items: center; flex-shrink: 0; }
-
-.user-avatar {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  border: 2px solid var(--glass-border-bright);
-  object-fit: cover;
-}
-
-.user-avatar--placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
-  color: #fff;
-  font-size: 12px;
-  font-weight: 700;
-  border-radius: 50%;
-}
-
 /* ═══════════════════════════════════════════════════════
-   Responsive  (inside 500px container — tweaks only)
+   Responsive tweaks (sizes only — layout won't break)
    ═══════════════════════════════════════════════════════ */
-@media (max-width: 430px) {
-  .app-header   { padding: 10px 12px; gap: 8px; }
-  .brand h1     { font-size: 18px; }
-  .brand-sub    { display: none; }
-
-  .live-clock   { padding: 5px 9px; }
-  .clock-hm     { font-size: 16px; }
-  .clock-ss     { font-size: 11px; }
-  .clock-date   { display: none; }
-
-  .score-value  { font-size: 13px; }
-  .score-label  { display: none; }
-
-  .hdr-btn      { width: 28px; height: 28px; }
+@media (max-width: 400px) {
+  .app-header    { padding: 8px 12px 6px; gap: 6px; }
+  .brand h1      { font-size: 20px; }
+  .brand-sub     { letter-spacing: 1.5px; }
+  .hdr-btn       { width: 28px; height: 28px; }
   .header-actions { gap: 3px; }
+
+  .clock-hm      { font-size: 17px; }
+  .clock-ss      { font-size: 11px; }
+  .clock-date    { font-size: 8.5px; letter-spacing: 1px; }
+
+  .score-value   { font-size: 14px; }
+  .score-label   { display: none; }
+  .productivity-badge { padding: 5px 8px; min-width: 36px; }
 }
 
-@media (max-width: 370px) {
-  .header-actions .hdr-btn:not(:last-child):not(:nth-last-child(2)) {
-    display: none; /* hide theme/sound on tiny screens, keep logout + settings */
-  }
-  .live-clock { display: none; } /* absolute last resort */
+@media (max-width: 340px) {
+  .clock-date    { display: none; }
+  .brand-sub     { display: none; }
 }

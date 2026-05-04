@@ -24,33 +24,34 @@ function LiveClock() {
     return () => clearInterval(timer);
   }, []);
 
-  const h = now.getHours();
-  const hh = String(h % 12 || 12).padStart(2, '0');
-  const mm = String(now.getMinutes()).padStart(2, '0');
-  const ss = String(now.getSeconds()).padStart(2, '0');
+  const h   = now.getHours();
+  const hh  = String(h % 12 || 12).padStart(2, '0');
+  const mm  = String(now.getMinutes()).padStart(2, '0');
+  const ss  = String(now.getSeconds()).padStart(2, '0');
   const ampm = h >= 12 ? 'PM' : 'AM';
-  const date = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const date = now.toLocaleDateString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric'
+  });
   const secPct = (now.getSeconds() / 59) * 100;
 
   return (
     <div className="live-clock">
-      {/* Time */}
-      <div className="clock-time-row">
-        <span className="clock-hm">
-          {hh}
-          <span className={colonOn ? 'clock-colon' : 'clock-colon clock-colon--off'}>:</span>
-          {mm}
-        </span>
-        <div className="clock-sec-block">
-          <span className="clock-ampm">{ampm}</span>
-          <span className="clock-ss">{ss}</span>
+      <div className="clock-body">
+        <div className="clock-time-row">
+          <span className="clock-hm">
+            {hh}
+            <span className={`clock-colon${colonOn ? '' : ' clock-colon--off'}`}>:</span>
+            {mm}
+          </span>
+          <div className="clock-sec-block">
+            <span className="clock-ampm">{ampm}</span>
+            <span className="clock-ss">{ss}</span>
+          </div>
+        </div>
+        <div className="clock-bar-track">
+          <div className="clock-bar-fill" style={{ width: `${secPct}%` }} />
         </div>
       </div>
-      {/* Progress sweep */}
-      <div className="clock-bar-track">
-        <div className="clock-bar-fill" style={{ width: `${secPct}%` }} />
-      </div>
-      {/* Date */}
       <span className="clock-date">{date}</span>
     </div>
   );
@@ -75,23 +76,11 @@ export function Header({ onOpenSettings, theme, onToggleTheme, user, productivit
 
   return (
     <header className="app-header">
-      {/* LEFT: Brand */}
-      <div className="brand">
-        <h1>Kar De</h1>
-        <span className="brand-sub">Intelligent Flow</span>
-      </div>
-
-      {/* RIGHT: clock + score + actions all in one flex row */}
-      <div className="header-right">
-        <LiveClock />
-
-        <div
-          className="productivity-badge"
-          title="Click to learn about your Discipline Score"
-          onClick={() => window.dispatchEvent(new Event('karde:open-score-popover'))}
-        >
-          <span className="score-label">Score</span>
-          <span className="score-value">{productivityScore}</span>
+      {/* ── Row 1: Brand + icon strip ── */}
+      <div className="header-row1">
+        <div className="brand">
+          <h1>Kar De</h1>
+          <span className="brand-sub">Intelligent Flow</span>
         </div>
 
         <div className="header-actions">
@@ -136,9 +125,28 @@ export function Header({ onOpenSettings, theme, onToggleTheme, user, productivit
             </button>
           )}
 
-          <button className="hdr-btn magnetic-btn" onClick={onOpenSettings} aria-label="Settings">
-            <Settings size={18} strokeWidth={2} />
+          <button
+            className="hdr-btn magnetic-btn"
+            onClick={onOpenSettings}
+            aria-label="Settings"
+            title="Settings"
+          >
+            <Settings size={16} strokeWidth={2} />
           </button>
+        </div>
+      </div>
+
+      {/* ── Row 2: Clock + Score ── */}
+      <div className="header-row2">
+        <LiveClock />
+
+        <div
+          className="productivity-badge"
+          title="Click to learn about your Discipline Score"
+          onClick={() => window.dispatchEvent(new Event('karde:open-score-popover'))}
+        >
+          <span className="score-label">Score</span>
+          <span className="score-value">{productivityScore}</span>
         </div>
       </div>
     </header>
