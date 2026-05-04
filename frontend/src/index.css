@@ -7,16 +7,16 @@
   --bg-glass-hover: rgba(30, 30, 50, 0.8);
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-border-bright: rgba(255, 255, 255, 0.15);
-  
+
   --text-light: #F8F7FF;
   --text-muted: #8F8FA3;
-  
+
   --accent-1: #00D4FF;
   --accent-2: #7B61FF;
   --accent-gradient: linear-gradient(135deg, var(--accent-1), var(--accent-2));
   --danger: #FF3366;
   --success: #00FF9D;
-  
+
   --nav-height: 80px;
   --radius-lg: 24px;
   --radius-md: 16px;
@@ -30,18 +30,18 @@
 
 /* ─── Light Theme Overrides ──────────────────────────────────────────────── */
 :root[data-theme="light"] {
-  --bg-body:              #ede9ff;
-  --bg-glass:             hsla(250, 80%, 98%, 0.72);
-  --bg-glass-hover:       hsla(250, 80%, 95%, 0.90);
-  --glass-border:         hsla(255, 40%, 55%, 0.18);
-  --glass-border-bright:  hsla(255, 40%, 55%, 0.32);
-  --text-light:           #1a1235;
-  --text-muted:           #6b6485;
-  --accent-1:             #0099bb;
-  --accent-2:             #8833cc;
-  --danger:               #cc1144;
-  --success:              #009955;
-  --icon-invert:          0;
+  --bg-body: #ede9ff;
+  --bg-glass: hsla(250, 80%, 98%, 0.72);
+  --bg-glass-hover: hsla(250, 80%, 95%, 0.90);
+  --glass-border: hsla(255, 40%, 55%, 0.18);
+  --glass-border-bright: hsla(255, 40%, 55%, 0.32);
+  --text-light: #1a1235;
+  --text-muted: #6b6485;
+  --accent-1: #0099bb;
+  --accent-2: #8833cc;
+  --danger: #cc1144;
+  --success: #009955;
+  --icon-invert: 0;
 }
 
 :root[data-theme="light"] body {
@@ -60,20 +60,23 @@
 
 :root[data-theme="light"] .skeleton-line {
   background: linear-gradient(90deg,
-    hsla(255, 40%, 55%, 0.05) 25%,
-    hsla(255, 40%, 55%, 0.12) 50%,
-    hsla(255, 40%, 55%, 0.05) 75%
-  );
+      hsla(255, 40%, 55%, 0.05) 25%,
+      hsla(255, 40%, 55%, 0.12) 50%,
+      hsla(255, 40%, 55%, 0.05) 75%);
   background-size: 200% 100%;
   animation: shimmer 2s infinite linear;
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
 body {
   font-family: 'Space Grotesk', sans-serif;
   background-color: var(--bg-body);
-  background-image: 
+  background-image:
     radial-gradient(circle at 10% 20%, hsla(180, 100%, 50%, 0.15), transparent 40%),
     radial-gradient(circle at 90% 80%, hsla(270, 100%, 68%, 0.15), transparent 40%),
     radial-gradient(circle at 50% 50%, hsla(255, 40%, 5%, 1), var(--bg-body));
@@ -87,8 +90,13 @@ body {
 }
 
 @keyframes bgPan {
-  0% { background-position: 0% 0%; }
-  100% { background-position: 100% 100%; }
+  0% {
+    background-position: 0% 0%;
+  }
+
+  100% {
+    background-position: 100% 100%;
+  }
 }
 
 #root {
@@ -113,7 +121,7 @@ body {
   backdrop-filter: blur(12px) saturate(160%);
   -webkit-backdrop-filter: blur(12px) saturate(160%);
   border: 1px solid var(--glass-border);
-  box-shadow: 
+  box-shadow:
     0 8px 32px 0 rgba(0, 0, 0, 0.3),
     inset 0 0 0 1px hsla(0, 0%, 100%, 0.02);
 }
@@ -134,25 +142,57 @@ body {
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slideInTask {
-  from { opacity: 0; transform: translateX(-15px) scale(0.95); filter: blur(4px); }
-  to { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
+  from {
+    opacity: 0;
+    transform: translateX(-15px) scale(0.95);
+    filter: blur(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    filter: blur(0);
+  }
 }
 
 @keyframes popCheck {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.25); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.25);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 @keyframes glowPulse {
-  0% { box-shadow: 0 0 0 0 hsla(180, 100%, 50%, 0.4); }
-  70% { box-shadow: 0 0 0 15px hsla(180, 100%, 50%, 0); }
-  100% { box-shadow: 0 0 0 0 hsla(180, 100%, 50%, 0); }
+  0% {
+    box-shadow: 0 0 0 0 hsla(180, 100%, 50%, 0.4);
+  }
+
+  70% {
+    box-shadow: 0 0 0 15px hsla(180, 100%, 50%, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 hsla(180, 100%, 50%, 0);
+  }
 }
 
 .glow-burst {
@@ -160,16 +200,20 @@ body {
 }
 
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .skeleton-line {
-  background: linear-gradient(90deg, 
-    hsla(0, 0%, 100%, 0.03) 25%, 
-    hsla(0, 0%, 100%, 0.08) 50%, 
-    hsla(0, 0%, 100%, 0.03) 75%
-  );
+  background: linear-gradient(90deg,
+      hsla(0, 0%, 100%, 0.03) 25%,
+      hsla(0, 0%, 100%, 0.08) 50%,
+      hsla(0, 0%, 100%, 0.03) 75%);
   background-size: 200% 100%;
   animation: shimmer 2s infinite linear;
   border-radius: 4px;
@@ -191,7 +235,7 @@ body {
   opacity: 0;
   pointer-events: none;
   transition: all 0.4s var(--ease-soft);
-  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
 }
 
 .app-toast.show {
@@ -221,13 +265,22 @@ body {
 }
 
 /* Tab Transitions */
-.tab-content-wrapper > div {
+.tab-content-wrapper>div {
   animation: tabEnter 0.5s var(--ease-soft);
 }
 
 @keyframes tabEnter {
-  from { opacity: 0; transform: translateY(15px); filter: blur(4px); }
-  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+    filter: blur(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
 }
 
 /* ─── Print / PDF Export ────────────────────────────────────────────────── */
@@ -255,8 +308,13 @@ body {
     background: var(--bg-body) !important;
   }
 
-  #karde-print-report h2 { page-break-before: auto; }
-  #karde-print-report table { page-break-inside: avoid; }
+  #karde-print-report h2 {
+    page-break-before: auto;
+  }
+
+  #karde-print-report table {
+    page-break-inside: avoid;
+  }
 
   @page {
     margin: 20mm;
@@ -268,7 +326,10 @@ body {
 ═══════════════════════════════════════════════════════════════════ */
 
 /* Ensure the app never overflows horizontally */
-html, body { overflow-x: hidden; }
+html,
+body {
+  overflow-x: hidden;
+}
 
 .app-container {
   /* Safe-area inset for iPhones with home bar */
@@ -276,7 +337,9 @@ html, body { overflow-x: hidden; }
 }
 
 @media (max-width: 480px) {
-  :root { --nav-height: 70px; }
+  :root {
+    --nav-height: 70px;
+  }
 
   .app-toast {
     bottom: 90px;
@@ -289,12 +352,19 @@ html, body { overflow-x: hidden; }
   }
 
   /* Stats grid single column on very small screens */
-  .stats-grid { grid-template-columns: repeat(2, 1fr); }
-  .stat-value { font-size: 28px; }
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stat-value {
+    font-size: 28px;
+  }
 }
 
 @media (max-width: 360px) {
-  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 /* ─── Splash Screen ────────────────────────────────────────────────────────── */
@@ -305,7 +375,7 @@ html, body { overflow-x: hidden; }
   align-items: center;
   justify-content: center;
   background-color: var(--bg-body);
-  background-image: 
+  background-image:
     radial-gradient(circle at 50% 50%, hsla(270, 100%, 60%, 0.1), transparent 60%),
     radial-gradient(circle at 50% 50%, var(--bg-body), var(--bg-body));
   color: var(--text-light);
@@ -396,19 +466,37 @@ html, body { overflow-x: hidden; }
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes spinReverse {
-  to { transform: rotate(-360deg); }
+  to {
+    transform: rotate(-360deg);
+  }
 }
 
 @keyframes pulseLogo {
-  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px hsla(180, 100%, 50%, 0.2)); }
-  50% { transform: scale(1.1); filter: drop-shadow(0 0 20px hsla(180, 100%, 50%, 0.6)); }
+
+  0%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 10px hsla(180, 100%, 50%, 0.2));
+  }
+
+  50% {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 20px hsla(180, 100%, 50%, 0.6));
+  }
 }
 
 @keyframes loadingSlide {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(200%); }
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(200%);
+  }
 }

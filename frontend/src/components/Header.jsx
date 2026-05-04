@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Settings, Volume2, VolumeX, Sun, Moon, LogOut } from 'lucide-react';
 import { signOutUser } from '../lib/firebase';
 import './Header.css';
@@ -10,6 +10,50 @@ function getSoundPref() {
     const v = localStorage.getItem(SOUND_KEY);
     return v === null ? true : v === 'true';
   } catch { return true; }
+}
+
+function LiveClock() {
+  const [now, setNow] = useState(new Date());
+  const [colonOn, setColonOn] = useState(true);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(new Date());
+      setColonOn(c => !c);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const h = now.getHours();
+  const hh = String(h % 12 || 12).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  const ss = String(now.getSeconds()).padStart(2, '0');
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const date = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const secPct = (now.getSeconds() / 59) * 100;
+
+  return (
+    <div className="live-clock">
+      {/* Time */}
+      <div className="clock-time-row">
+        <span className="clock-hm">
+          {hh}
+          <span className={colonOn ? 'clock-colon' : 'clock-colon clock-colon--off'}>:</span>
+          {mm}
+        </span>
+        <div className="clock-sec-block">
+          <span className="clock-ampm">{ampm}</span>
+          <span className="clock-ss">{ss}</span>
+        </div>
+      </div>
+      {/* Progress sweep */}
+      <div className="clock-bar-track">
+        <div className="clock-bar-fill" style={{ width: `${secPct}%` }} />
+      </div>
+      {/* Date */}
+      <span className="clock-date">{date}</span>
+    </div>
+  );
 }
 
 export function Header({ onOpenSettings, theme, onToggleTheme, user, productivityScore }) {
@@ -31,72 +75,71 @@ export function Header({ onOpenSettings, theme, onToggleTheme, user, productivit
 
   return (
     <header className="app-header">
+      {/* LEFT: Brand */}
       <div className="brand">
         <h1>Kar De</h1>
-        <span>Intelligent Flow</span>
+        <span className="brand-sub">Intelligent Flow</span>
       </div>
 
-      {/* UX: score badge — clicking opens explanation popover via custom event */}
-      <div
-        className="productivity-badge"
-        title="Click to learn about your Discipline Score"
-        onClick={() => window.dispatchEvent(new Event('karde:open-score-popover'))}
-        style={{ cursor: 'pointer' }}
-      >
-        <span className="score-label">Score</span>
-        <span className="score-value">{productivityScore}</span>
-      </div>
-      <div className="header-actions">
-        {/* Theme toggle */}
-        <button
-          className="sound-btn magnetic-btn"
-          onClick={onToggleTheme}
-          aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-          title={isDark ? 'Light Mode' : 'Dark Mode'}
+      {/* RIGHT: clock + score + actions all in one flex row */}
+      <div className="header-right">
+        <LiveClock />
+
+        <div
+          className="productivity-badge"
+          title="Click to learn about your Discipline Score"
+          onClick={() => window.dispatchEvent(new Event('karde:open-score-popover'))}
         >
-          {isDark
-            ? <Sun size={20} strokeWidth={2} />
-            : <Moon size={20} strokeWidth={2} />}
-        </button>
+          <span className="score-label">Score</span>
+          <span className="score-value">{productivityScore}</span>
+        </div>
 
-        {/* Sound toggle */}
-        <button
-          className="sound-btn magnetic-btn"
-          onClick={toggleSound}
-          aria-label={soundOn ? 'Mute sounds' : 'Enable sounds'}
-          title={soundOn ? 'Sound ON' : 'Sound OFF'}
-        >
-          {soundOn ? <Volume2 size={20} strokeWidth={2} /> : <VolumeX size={20} strokeWidth={2} />}
-        </button>
-
-        {/* User avatar */}
-        {user && (
-          <div className="user-avatar-wrap" title={user.displayName || user.email}>
-            {user.photoURL
-              ? <img src={user.photoURL} alt="avatar" className="user-avatar" referrerPolicy="no-referrer" />
-              : <div className="user-avatar user-avatar--placeholder">
-                  {(user.displayName || user.email || 'U')[0].toUpperCase()}
-                </div>
-            }
-          </div>
-        )}
-
-        {/* Sign out */}
-        {user && (
+        <div className="header-actions">
           <button
-            className="sound-btn magnetic-btn"
-            onClick={handleSignOut}
-            disabled={signingOut}
-            aria-label="Sign out"
-            title="Sign out"
+            className="hdr-btn magnetic-btn"
+            onClick={onToggleTheme}
+            title={isDark ? 'Light Mode' : 'Dark Mode'}
+            aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
           >
-            <LogOut size={18} strokeWidth={2} />
+            {isDark ? <Sun size={16} strokeWidth={2} /> : <Moon size={16} strokeWidth={2} />}
           </button>
-        )}
 
-        <button className="settings-btn magnetic-btn" onClick={onOpenSettings} aria-label="Settings">
-          <Settings size={24} strokeWidth={2} />
-        </button>
+          <button
+            className="hdr-btn magnetic-btn"
+            onClick={toggleSound}
+            title={soundOn ? 'Sound ON' : 'Sound OFF'}
+            aria-label={soundOn ? 'Mute sounds' : 'Enable sounds'}
+          >
+            {soundOn ? <Volume2 size={16} strokeWidth={2} /> : <VolumeX size={16} strokeWidth={2} />}
+          </button>
+
+          {user && (
+            <div className="user-avatar-wrap" title={user.displayName || user.email}>
+              {user.photoURL
+                ? <img src={user.photoURL} alt="avatar" className="user-avatar" referrerPolicy="no-referrer" />
+                : <div className="user-avatar user-avatar--placeholder">
+                    {(user.displayName || user.email || 'U')[0].toUpperCase()}
+                  </div>
+              }
+            </div>
+          )}
+
+          {user && (
+            <button
+              className="hdr-btn magnetic-btn"
+              onClick={handleSignOut}
+              disabled={signingOut}
+              aria-label="Sign out"
+              title="Sign out"
+            >
+              <LogOut size={16} strokeWidth={2} />
+            </button>
+          )}
+
+          <button className="hdr-btn magnetic-btn" onClick={onOpenSettings} aria-label="Settings">
+            <Settings size={18} strokeWidth={2} />
+          </button>
+        </div>
       </div>
     </header>
   );

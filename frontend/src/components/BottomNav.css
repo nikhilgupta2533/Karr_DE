@@ -31,7 +31,8 @@
   align-items: center;
   gap: 5px;
   padding: 6px 8px;
-  min-height: 44px; /* Minimum touch target */
+  min-height: 44px;
+  /* Minimum touch target */
   position: relative;
   transition: all 0.4s var(--ease-soft);
   flex: 1;
@@ -103,7 +104,19 @@
 }
 
 @media (max-width: 360px) {
-  .nav-item { font-size: 9px; letter-spacing: 0.5px; padding: 6px 4px; }
-  .nav-item span { display: none; } /* Icon-only on very small screens */
-  .nav-icon-wrapper { width: 36px; height: 36px; }
+  .nav-item {
+    font-size: 9px;
+    letter-spacing: 0.5px;
+    padding: 6px 4px;
+  }
+
+  .nav-item span {
+    display: none;
+  }
+
+  /* Icon-only on very small screens */
+  .nav-icon-wrapper {
+    width: 36px;
+    height: 36px;
+  }
 }
