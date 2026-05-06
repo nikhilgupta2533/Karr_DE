@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { requestNotificationPermission, sendAppNotification } from '../utils/notifications';
 
 const SETTINGS_KEY = 'karde_settings';
 const PINNED_KEY   = 'karde_pinned';
@@ -26,7 +27,7 @@ function scheduleNotif(task, timeoutMapRef) {
   if (timeoutMapRef.current.has(task.id)) return; // already scheduled
   const tid = setTimeout(() => {
     if (Notification.permission === 'granted') {
-      new Notification('⏰ Kar De', {
+      sendAppNotification('⏰ Kar De', {
         body: `${task.title || task.raw} — time to get it done!`,
         icon: '/favicon.ico',
       });
@@ -138,7 +139,7 @@ export function useTasks(idToken = null, getFreshToken = null) {
   useEffect(() => {
     if (!('Notification' in window)) return;
     if (Notification.permission === 'default') {
-      Notification.requestPermission().catch(() => {});
+      requestNotificationPermission();
     }
   }, []);
 

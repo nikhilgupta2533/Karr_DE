@@ -12,8 +12,8 @@ import './TodayTab.css';
 
 const DEFAULT_TEMPLATES = [
   { id: 't1', label: '📚 Study Session', tasks: ['📖 Read Chapter 1', '📝 Take Notes', '🧠 Review Concepts'] },
-  { id: 't2', label: '💪 Workout',        tasks: ['🏃‍♂️ Warm Up', '🏋️‍♂️ Main Exercise', '🧘‍♂️ Stretching'] },
-  { id: 't3', label: '🎯 Deep Work',      tasks: ['📵 Phone on DND', '💻 90 Min Focus Block', '🚶‍♂️ 15 Min Walk'] },
+  { id: 't2', label: '💪 Workout', tasks: ['🏃‍♂️ Warm Up', '🏋️‍♂️ Main Exercise', '🧘‍♂️ Stretching'] },
+  { id: 't3', label: '🎯 Deep Work', tasks: ['📵 Phone on DND', '💻 90 Min Focus Block', '🚶‍♂️ 15 Min Walk'] },
 ];
 
 // FIX: task overlap — wrapper uses display:block + width:100% to prevent stacking issues
@@ -60,15 +60,15 @@ export function TodayTab({
   onBulkComplete, onUpdateTitle, onAddTemplate, onUpdateDueTime,
   onUpdateTask, onDecomposeTask, onPlanDay, onToggleSubtask, onRewriteTask, soundFns, missedPattern,
 }) {
-  const [inputVal,       setInputVal]       = useState('');
-  const [recurrence,     setRecurrence]     = useState('none');
-  const [showDuePicker,  setShowDuePicker]  = useState(false);
-  const [dueTime,        setDueTime]        = useState('');
-  const [showTemplates,  setShowTemplates]  = useState(false);
-  const [focusMode,      setFocusMode]      = useState(false);
-  const [focusIndex,     setFocusIndex]     = useState(0);
-  const [zenTime,        setZenTime]        = useState(1500);
-  const [zenActive,      setZenActive]      = useState(false);
+  const [inputVal, setInputVal] = useState('');
+  const [recurrence, setRecurrence] = useState('none');
+  const [showDuePicker, setShowDuePicker] = useState(false);
+  const [dueTime, setDueTime] = useState('');
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
+  const [focusIndex, setFocusIndex] = useState(0);
+  const [zenTime, setZenTime] = useState(1500);
+  const [zenActive, setZenActive] = useState(false);
 
   // Focus Stats
   const [focusStats, setFocusStats] = useState(() => {
@@ -82,13 +82,13 @@ export function TodayTab({
   const tasksCompletedThisSession = useRef(0);
 
   // Decompose state
-  const [decomposing,    setDecomposing]    = useState(false);
+  const [decomposing, setDecomposing] = useState(false);
   const [decomposeSteps, setDecomposeSteps] = useState([]);     // [{text, checked}]
 
   // Plan Day state
-  const [planning,       setPlanning]       = useState(false);
-  const [planData,       setPlanData]       = useState(null);   // { message, plan[] }
-  const [plannedIds,     setPlannedIds]     = useState(new Set());
+  const [planning, setPlanning] = useState(false);
+  const [planData, setPlanData] = useState(null);   // { message, plan[] }
+  const [plannedIds, setPlannedIds] = useState(new Set());
 
   // UX: score badge popover
   const [showScorePopover, setShowScorePopover] = useState(false);
@@ -118,7 +118,7 @@ export function TodayTab({
   const [randomTip] = useState(() => PRODUCTIVITY_TIPS[Math.floor(Math.random() * PRODUCTIVITY_TIPS.length)]);
 
   const templateRef = useRef(null);
-  const timerRef    = useRef(null);
+  const timerRef = useRef(null);
 
   const [templates, setTemplates] = useState(() => {
     try {
@@ -150,11 +150,11 @@ export function TodayTab({
     !(t.category && (t.category.startsWith('Plan:') || t.category === 'Plan')) &&
     // Only show tasks added today OR tasks that are pending and NOT in the future
     (getYYYYMMDD(new Date(t.addedAt)) === todayStr ||
-     (t.status === 'pending' && getYYYYMMDD(new Date(t.addedAt)) <= todayStr))
+      (t.status === 'pending' && getYYYYMMDD(new Date(t.addedAt)) <= todayStr))
   );
-  const pending   = displayTasks.filter(t => t.status === 'pending');
+  const pending = displayTasks.filter(t => t.status === 'pending');
   const completed = displayTasks.filter(t => t.status === 'completed');
-  
+
   const orderedTasks = useMemo(() => {
     const base = [...pending, ...completed].sort((a, b) => {
       const pinDiff = Number(Boolean(b.is_pinned)) - Number(Boolean(a.is_pinned));
@@ -188,7 +188,7 @@ export function TodayTab({
     }
   };
 
-  const focusTasks     = useMemo(() => orderedTasks.filter(t => t.status === 'pending'), [orderedTasks]);
+  const focusTasks = useMemo(() => orderedTasks.filter(t => t.status === 'pending'), [orderedTasks]);
   const activeFocusTask = focusTasks[focusIndex] || null;
 
   // ── Zen timer ────────────────────────────────────────────────────────────
@@ -235,7 +235,7 @@ export function TodayTab({
         return newStats;
       });
     }
-    
+
     if (totalTimeSpentThisSession.current > 60 || tasksCompletedThisSession.current > 0) {
       setSessionSummary({
         timeSpent: totalTimeSpentThisSession.current,
@@ -244,7 +244,7 @@ export function TodayTab({
     } else {
       setFocusMode(false);
     }
-    
+
     setZenActive(false);
     totalTimeSpentThisSession.current = 0;
     tasksCompletedThisSession.current = 0;
@@ -308,8 +308,8 @@ export function TodayTab({
     const subtasks = approvedSteps.length > 0 ? JSON.stringify(approvedSteps) : null;
     onAddTask(inputVal.trim(), {
       is_recurring: recurrence !== 'none',
-      recurrence:   recurrence === 'none' ? null : recurrence,
-      due_time:     dueTime || null,
+      recurrence: recurrence === 'none' ? null : recurrence,
+      due_time: dueTime || null,
       subtasks,
       skip_ai: true,
     });
@@ -630,7 +630,7 @@ export function TodayTab({
                     renderMeta={() => (
                       <>
                         {t.is_recurring && <span className="task-meta-item"><Repeat size={10} /> {t.recurrence}</span>}
-                        {t.due_time     && <span className="task-meta-item due-badge">{formatTime(t.due_time)}</span>}
+                        {t.due_time && <span className="task-meta-item due-badge">{formatTime(t.due_time)}</span>}
                       </>
                     )}
                   />
@@ -689,10 +689,10 @@ export function TodayTab({
                 <div className="zen-progress-ring">
                   <svg viewBox="0 0 100 100">
                     <circle className="zen-ring-bg" cx="50" cy="50" r="46" />
-                    <circle 
-                      className="zen-ring-fill" 
-                      cx="50" cy="50" r="46" 
-                      strokeDasharray={`${((1500 - zenTime) / 1500) * 289} 289`} 
+                    <circle
+                      className="zen-ring-fill"
+                      cx="50" cy="50" r="46"
+                      strokeDasharray={`${((1500 - zenTime) / 1500) * 289} 289`}
                       style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%' }}
                     />
                   </svg>
@@ -709,7 +709,7 @@ export function TodayTab({
                   {zenActive ? 'Pause Session' : 'Start Zen'}
                 </button>
                 <div className="focus-score-badge">
-                  Score: {focusStats.score} 
+                  Score: {focusStats.score}
                 </div>
               </div>
 
@@ -722,51 +722,51 @@ export function TodayTab({
                   <p className="focus-raw">{activeFocusTask.raw}</p>
 
                   {/* Focus subtasks */}
-              {activeFocusTask.subtasks && (() => {
-                try {
-                  const st = JSON.parse(activeFocusTask.subtasks);
-                  if (st.length) return (
-                    <div className="focus-subtasks">
-                      {st.map((s, i) => (
-                        <div 
-                          key={i} 
-                          className={`focus-subtask-item ${s.done ? 'done' : ''}`}
-                          onClick={() => onToggleSubtask(activeFocusTask.id, i)}
-                        >
-                          <span className="focus-subtask-check">{s.done ? '✓' : '○'}</span>
-                          <span className="focus-subtask-text">{s.text || s}</span>
+                  {activeFocusTask.subtasks && (() => {
+                    try {
+                      const st = JSON.parse(activeFocusTask.subtasks);
+                      if (st.length) return (
+                        <div className="focus-subtasks">
+                          {st.map((s, i) => (
+                            <div
+                              key={i}
+                              className={`focus-subtask-item ${s.done ? 'done' : ''}`}
+                              onClick={() => onToggleSubtask(activeFocusTask.id, i)}
+                            >
+                              <span className="focus-subtask-check">{s.done ? '✓' : '○'}</span>
+                              <span className="focus-subtask-text">{s.text || s}</span>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  );
-                } catch {}
-                return null;
-              })()}
+                      );
+                    } catch { }
+                    return null;
+                  })()}
 
-              <div className="focus-actions">
-                <button
-                  type="button"
-                  className="magnetic-btn"
-                  onClick={() => {
-                    soundFns?.playComplete?.();
-                    handleToggle(activeFocusTask.id);
-                    tasksCompletedThisSession.current += 1;
-                    setFocusIndex(i => i + 1);
-                  }}
-                >
-                  ✓ Complete
-                </button>
-                <button
-                  type="button"
-                  className="magnetic-btn"
-                  onClick={() => setFocusIndex(i => i + 1)}
-                >
-                  ✗ Defer
-                </button>
-              </div>
-            </div>
-          )}
-          </>
+                  <div className="focus-actions">
+                    <button
+                      type="button"
+                      className="magnetic-btn"
+                      onClick={() => {
+                        soundFns?.playComplete?.();
+                        handleToggle(activeFocusTask.id);
+                        tasksCompletedThisSession.current += 1;
+                        setFocusIndex(i => i + 1);
+                      }}
+                    >
+                      ✓ Complete
+                    </button>
+                    <button
+                      type="button"
+                      className="magnetic-btn"
+                      onClick={() => setFocusIndex(i => i + 1)}
+                    >
+                      ✗ Defer
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
@@ -784,33 +784,33 @@ export function TodayTab({
                 <div key={tpl.id} className="tpl-edit-card glass-panel">
                   <div className="tpl-label-row">
                     <input className="tpl-label-input" value={tpl.label}
-                      onChange={e => { const d=[...draftTemplates]; d[ti]={...d[ti],label:e.target.value}; setDraftTemplates(d); }} />
-                    <button type="button" className="tpl-del-btn" onClick={() => setDraftTemplates(draftTemplates.filter((_,i)=>i!==ti))}><Trash2 size={14}/></button>
+                      onChange={e => { const d = [...draftTemplates]; d[ti] = { ...d[ti], label: e.target.value }; setDraftTemplates(d); }} />
+                    <button type="button" className="tpl-del-btn" onClick={() => setDraftTemplates(draftTemplates.filter((_, i) => i !== ti))}><Trash2 size={14} /></button>
                   </div>
                   <div className="tpl-tasks">
                     {tpl.tasks.map((task, ki) => (
                       <div key={ki} className="tpl-task-row">
                         <input className="tpl-task-input" value={task}
-                          onChange={e => { const d=[...draftTemplates]; const tasks=[...d[ti].tasks]; tasks[ki]=e.target.value; d[ti]={...d[ti],tasks}; setDraftTemplates(d); }} />
-                        <button type="button" className="tpl-del-btn" onClick={() => { const d=[...draftTemplates]; d[ti]={...d[ti],tasks:d[ti].tasks.filter((_,i)=>i!==ki)}; setDraftTemplates(d); }}><X size={12}/></button>
+                          onChange={e => { const d = [...draftTemplates]; const tasks = [...d[ti].tasks]; tasks[ki] = e.target.value; d[ti] = { ...d[ti], tasks }; setDraftTemplates(d); }} />
+                        <button type="button" className="tpl-del-btn" onClick={() => { const d = [...draftTemplates]; d[ti] = { ...d[ti], tasks: d[ti].tasks.filter((_, i) => i !== ki) }; setDraftTemplates(d); }}><X size={12} /></button>
                       </div>
                     ))}
-                    <button type="button" className="tpl-add-task-btn" onClick={() => { const d=[...draftTemplates]; d[ti]={...d[ti],tasks:[...d[ti].tasks,'']}; setDraftTemplates(d); }}><Plus size={12}/> Add step</button>
+                    <button type="button" className="tpl-add-task-btn" onClick={() => { const d = [...draftTemplates]; d[ti] = { ...d[ti], tasks: [...d[ti].tasks, ''] }; setDraftTemplates(d); }}><Plus size={12} /> Add step</button>
                   </div>
                 </div>
               ))}
-              <button type="button" className="tpl-add-btn magnetic-btn" onClick={() => setDraftTemplates([...draftTemplates,{id:`t${Date.now()}`,label:'✨ New Template',tasks:['']}])}>
-                <Plus size={14}/> New Template
+              <button type="button" className="tpl-add-btn magnetic-btn" onClick={() => setDraftTemplates([...draftTemplates, { id: `t${Date.now()}`, label: '✨ New Template', tasks: [''] }])}>
+                <Plus size={14} /> New Template
               </button>
             </div>
             <div className="tpl-edit-footer">
               <button type="button" className="tpl-cancel-btn" onClick={() => setEditingTemplates(false)}>Cancel</button>
               <button type="button" className="tpl-save-btn magnetic-btn" onClick={() => {
-                const cleaned = draftTemplates.filter(t=>t.label.trim()).map(t=>({...t,tasks:t.tasks.filter(s=>s.trim())}));
+                const cleaned = draftTemplates.filter(t => t.label.trim()).map(t => ({ ...t, tasks: t.tasks.filter(s => s.trim()) }));
                 setTemplates(cleaned);
                 localStorage.setItem('karde_templates', JSON.stringify(cleaned));
                 setEditingTemplates(false);
-              }}><Save size={14}/> Save</button>
+              }}><Save size={14} /> Save</button>
             </div>
           </div>
         </div>

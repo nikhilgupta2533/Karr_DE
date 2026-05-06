@@ -45,7 +45,10 @@ button {
     margin: 0 auto;
     border-left: 1px solid var(--glass-border);
     border-right: 1px solid var(--glass-border);
-    box-shadow: 0 0 100px rgba(0,0,0,0.8);
+    border-top-left-radius: 28px;
+    border-top-right-radius: 28px;
+    box-shadow: var(--shadow-strong);
+    background: linear-gradient(180deg, var(--bg-glass), transparent 40%);
   }
 }
 

@@ -13,6 +13,7 @@ import { PlanTab } from './components/PlanTab';
 import { SettingsModal } from './components/SettingsModal';
 import { AuthScreen } from './components/AuthScreen';
 import { ReviewMissedModal } from './components/ReviewMissedModal';
+import { sendAppNotification } from './utils/notifications';
 
 // ── Theme helpers ─────────────────────────────────────────────────────────────
 const THEME_KEY = 'kardeTheme';
@@ -95,7 +96,7 @@ function App() {
     if (hour >= 18 && completedToday === 0 && todaysTasks.length > 0) {
       const lastReminded = localStorage.getItem(`reminded_${todayStr}`);
       if (!lastReminded && Notification.permission === 'granted') {
-        new Notification('⏰ Kar De Flow', {
+        sendAppNotification('⏰ Kar De Flow', {
           body: "It's getting late! Let's get at least one task done to keep the momentum.",
           icon: '/favicon.ico',
         });

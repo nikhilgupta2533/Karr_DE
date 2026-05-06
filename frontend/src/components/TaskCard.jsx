@@ -5,9 +5,9 @@ import {
 } from 'lucide-react';
 import './TaskCard.css';
 
-const CATEGORIES = ['Personal','Work','Health','Home'];
-const PRIORITIES  = ['low','medium','high'];
-const DIFFICULTIES = ['easy','medium','hard'];
+const CATEGORIES = ['Personal', 'Work', 'Health', 'Home'];
+const PRIORITIES = ['low', 'medium', 'high'];
+const DIFFICULTIES = ['easy', 'medium', 'hard'];
 
 function parseSubtasks(raw) {
   if (!raw) return [];
@@ -19,12 +19,12 @@ export function TaskCard({
   onUpdateTitle, onUpdateDueTime, onUpdateTask,
   onAIRewrite, soundFns, renderMeta, onFocus, style
 }) {
-  const [editing,       setEditing]       = useState(false);
-  const [draftTitle,    setDraftTitle]    = useState(task.title || '');
-  const [showTimeEditor,setShowTimeEditor]= useState(false);
-  const [lastTapAt,     setLastTapAt]     = useState(0);
-  const [showSubtasks,  setShowSubtasks]  = useState(false);
-  const [aiLoading,     setAiLoading]     = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draftTitle, setDraftTitle] = useState(task.title || '');
+  const [showTimeEditor, setShowTimeEditor] = useState(false);
+  const [lastTapAt, setLastTapAt] = useState(0);
+  const [showSubtasks, setShowSubtasks] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
   const [justCompleted, setJustCompleted] = useState(false);
   const prevStatus = useRef(task.status);
 
@@ -60,16 +60,16 @@ export function TaskCard({
     return (
       <div className="task-card loading glass-panel">
         <div className="skeleton-block">
-          <div className="skeleton-line" style={{ height:'24px', width:'70%', borderRadius:'8px' }}></div>
-          <div className="skeleton-line" style={{ height:'14px', width:'40%', borderRadius:'6px' }}></div>
+          <div className="skeleton-line" style={{ height: '24px', width: '70%', borderRadius: '8px' }}></div>
+          <div className="skeleton-line" style={{ height: '14px', width: '40%', borderRadius: '6px' }}></div>
         </div>
       </div>
     );
   }
 
   const isCompleted = task.status === 'completed';
-  const isMissed    = task.status === 'missed';
-  const canEdit     = !isCompleted && !isMissed;
+  const isMissed = task.status === 'missed';
+  const canEdit = !isCompleted && !isMissed;
   const displayTitle = task.title || 'Processing Flow...';
 
   const cleanTitleOnly = (v) => (v || '').replace(/^[^\w\s]+\s*/, '').trim();
@@ -96,24 +96,24 @@ export function TaskCard({
   // ── Full inline editor ────────────────────────────────────────────────────
   const openFullEdit = () => {
     setEditDraft({
-      title:      cleanTitleOnly(displayTitle),
-      category:   task.category   || 'Personal',
-      priority:   task.priority   || 'medium',
+      title: cleanTitleOnly(displayTitle),
+      category: task.category || 'Personal',
+      priority: task.priority || 'medium',
       difficulty: task.difficulty || 'medium',
       recurrence: task.recurrence || 'none',
-      due_time:   task.due_time   || '',
+      due_time: task.due_time || '',
     });
     setEditing('full');
   };
 
   const saveFullEdit = async () => {
     const fields = {
-      title:     editDraft.title.trim() || displayTitle,
-      category:  editDraft.category,
-      priority:  editDraft.priority,
+      title: editDraft.title.trim() || displayTitle,
+      category: editDraft.category,
+      priority: editDraft.priority,
       difficulty: editDraft.difficulty,
       recurrence: editDraft.recurrence === 'none' ? null : editDraft.recurrence,
-      due_time:  editDraft.due_time || null,
+      due_time: editDraft.due_time || null,
     };
     // Add emoji back
     const emoji = getEmojiPrefix(displayTitle);
@@ -183,14 +183,14 @@ export function TaskCard({
               value={editDraft.priority}
               onChange={e => setEditDraft(d => ({ ...d, priority: e.target.value }))}
             >
-              {PRIORITIES.map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase()+p.slice(1)}</option>)}
+              {PRIORITIES.map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
             </select>
             <select
               className="edit-select"
               value={editDraft.difficulty}
               onChange={e => setEditDraft(d => ({ ...d, difficulty: e.target.value }))}
             >
-              {DIFFICULTIES.map(d => <option key={d} value={d}>{d.charAt(0).toUpperCase()+d.slice(1)}</option>)}
+              {DIFFICULTIES.map(d => <option key={d} value={d}>{d.charAt(0).toUpperCase() + d.slice(1)}</option>)}
             </select>
             <select
               className="edit-select"
@@ -275,10 +275,10 @@ export function TaskCard({
             <div className="subtask-progress-ring-wrap" onClick={() => setShowSubtasks(s => !s)}>
               <svg className="subtask-progress-ring" viewBox="0 0 36 36">
                 <circle className="ring-bg" cx="18" cy="18" r="16" />
-                <circle 
-                  className="ring-fill" 
-                  cx="18" cy="18" r="16" 
-                  strokeDasharray={`${(subtaskDone / subtasks.length) * 100} 100`} 
+                <circle
+                  className="ring-fill"
+                  cx="18" cy="18" r="16"
+                  strokeDasharray={`${(subtaskDone / subtasks.length) * 100} 100`}
                 />
               </svg>
               <span className="ring-text">{subtaskDone}/{subtasks.length}</span>

@@ -2,20 +2,25 @@
 
 :root {
   /* Fluid Palette */
-  --bg-body: #0A0A0F;
-  --bg-glass: rgba(20, 20, 35, 0.6);
-  --bg-glass-hover: rgba(30, 30, 50, 0.8);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-border-bright: rgba(255, 255, 255, 0.15);
+  --bg-body: #080a14;
+  --bg-elevated: #0f1222;
+  --bg-glass: rgba(14, 18, 35, 0.62);
+  --bg-glass-hover: rgba(24, 32, 60, 0.82);
+  --glass-border: rgba(255, 255, 255, 0.09);
+  --glass-border-bright: rgba(255, 255, 255, 0.2);
+  --shadow-soft: 0 14px 30px rgba(4, 6, 16, 0.45);
+  --shadow-strong: 0 28px 80px rgba(3, 4, 12, 0.65);
+  --ambient-1: hsla(191, 100%, 58%, 0.17);
+  --ambient-2: hsla(267, 100%, 67%, 0.19);
 
-  --text-light: #F8F7FF;
-  --text-muted: #8F8FA3;
+  --text-light: #f5f7ff;
+  --text-muted: #969bb5;
 
-  --accent-1: #00D4FF;
-  --accent-2: #7B61FF;
+  --accent-1: #27d2ff;
+  --accent-2: #8f6dff;
   --accent-gradient: linear-gradient(135deg, var(--accent-1), var(--accent-2));
-  --danger: #FF3366;
-  --success: #00FF9D;
+  --danger: #ff4d7e;
+  --success: #1de9a3;
 
   --nav-height: 80px;
   --radius-lg: 24px;
@@ -30,31 +35,36 @@
 
 /* ─── Light Theme Overrides ──────────────────────────────────────────────── */
 :root[data-theme="light"] {
-  --bg-body: #ede9ff;
-  --bg-glass: hsla(250, 80%, 98%, 0.72);
-  --bg-glass-hover: hsla(250, 80%, 95%, 0.90);
-  --glass-border: hsla(255, 40%, 55%, 0.18);
-  --glass-border-bright: hsla(255, 40%, 55%, 0.32);
-  --text-light: #1a1235;
-  --text-muted: #6b6485;
-  --accent-1: #0099bb;
-  --accent-2: #8833cc;
-  --danger: #cc1144;
-  --success: #009955;
+  --bg-body: #eef2ff;
+  --bg-elevated: #ffffff;
+  --bg-glass: hsla(230, 90%, 99%, 0.78);
+  --bg-glass-hover: hsla(232, 90%, 97%, 0.96);
+  --glass-border: hsla(246, 38%, 52%, 0.2);
+  --glass-border-bright: hsla(246, 40%, 48%, 0.36);
+  --shadow-soft: 0 12px 28px rgba(92, 84, 156, 0.16);
+  --shadow-strong: 0 30px 90px rgba(93, 87, 162, 0.23);
+  --ambient-1: hsla(193, 100%, 45%, 0.12);
+  --ambient-2: hsla(267, 83%, 56%, 0.14);
+  --text-light: #171a2d;
+  --text-muted: #666c8a;
+  --accent-1: #00a5cb;
+  --accent-2: #8258ff;
+  --danger: #d51d52;
+  --success: #009f66;
   --icon-invert: 0;
 }
 
 :root[data-theme="light"] body {
   background-color: var(--bg-body);
   background-image:
-    radial-gradient(circle at 10% 20%, hsla(180, 100%, 60%, 0.10), transparent 30%),
-    radial-gradient(circle at 90% 80%, hsla(270, 80%, 75%, 0.10), transparent 30%),
-    radial-gradient(circle at 50% 50%, hsla(255, 70%, 96%, 1), var(--bg-body));
+    radial-gradient(circle at 12% 16%, var(--ambient-1), transparent 38%),
+    radial-gradient(circle at 88% 84%, var(--ambient-2), transparent 36%),
+    radial-gradient(circle at 50% 50%, #f7f9ff, var(--bg-body));
 }
 
 :root[data-theme="light"] .glass-panel {
   box-shadow:
-    0 4px 24px -1px rgba(100, 80, 180, 0.12),
+    var(--shadow-soft),
     inset 0 0 0 1px hsla(255, 40%, 55%, 0.08);
 }
 
@@ -77,9 +87,9 @@ body {
   font-family: 'Space Grotesk', sans-serif;
   background-color: var(--bg-body);
   background-image:
-    radial-gradient(circle at 10% 20%, hsla(180, 100%, 50%, 0.15), transparent 40%),
-    radial-gradient(circle at 90% 80%, hsla(270, 100%, 68%, 0.15), transparent 40%),
-    radial-gradient(circle at 50% 50%, hsla(255, 40%, 5%, 1), var(--bg-body));
+    radial-gradient(circle at 10% 20%, var(--ambient-1), transparent 45%),
+    radial-gradient(circle at 90% 80%, var(--ambient-2), transparent 45%),
+    radial-gradient(circle at 50% 50%, var(--bg-elevated), var(--bg-body));
   background-attachment: fixed;
   background-size: 200% 200%;
   animation: bgPan 25s ease-in-out infinite alternate;
@@ -122,7 +132,7 @@ body {
   -webkit-backdrop-filter: blur(12px) saturate(160%);
   border: 1px solid var(--glass-border);
   box-shadow:
-    0 8px 32px 0 rgba(0, 0, 0, 0.3),
+    var(--shadow-soft),
     inset 0 0 0 1px hsla(0, 0%, 100%, 0.02);
 }
 
@@ -235,7 +245,7 @@ body {
   opacity: 0;
   pointer-events: none;
   transition: all 0.4s var(--ease-soft);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-strong);
 }
 
 .app-toast.show {

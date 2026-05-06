@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import './SettingsModal.css';
+import { requestNotificationPermission, sendAppNotification } from '../utils/notifications';
 
 export function SettingsModal({ show, onClose, settings, setSettings, clearData, deleteAccount }) {
   const [apiKey, setApiKey] = useState('');
@@ -60,12 +61,14 @@ export function SettingsModal({ show, onClose, settings, setSettings, clearData,
         
         <button 
           className="btn-secondary" 
-          onClick={() => {
-            if (Notification.permission === 'granted') {
-              new Notification('🔔 Notification Test', { body: 'This is how your task reminders will look!' });
-            } else {
-              Notification.requestPermission().then(p => {
-                if (p === 'granted') new Notification('🔔 Notification Test', { body: 'Notifications enabled!' });
+          onClick={async () => {
+            const perm = Notification.permission === 'granted'
+              ? 'granted'
+              : await requestNotificationPermission();
+
+            if (perm === 'granted') {
+              await sendAppNotification('🔔 Notification Test', {
+                body: 'This is how your task reminders will look!'
               });
             }
           }}
