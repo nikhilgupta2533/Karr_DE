@@ -250,7 +250,7 @@ export function RecordsTab({ tasks }) {
   };
 
   return (
-    <div className="view-content active">
+    <div className="view-content active records-view">
       <div className="records-stats-header">
         <h3>Stats</h3>
         <div className="records-header-actions">
@@ -321,13 +321,19 @@ export function RecordsTab({ tasks }) {
           const isExpanded = expandedDays[dtStr] !== false;
           return (
             <div key={dtStr} className="day-group">
-              <div className="day-header" onClick={() => toggleDay(dtStr)}>
+              <button
+                type="button"
+                className="day-header"
+                onClick={() => toggleDay(dtStr)}
+                aria-expanded={isExpanded}
+                aria-label={`Toggle records for ${label}`}
+              >
                 <div className="day-label-group">
                   {isExpanded ? <ChevronDown size={18} strokeWidth={2.5} /> : <ChevronRight size={18} strokeWidth={2.5} />}
                   <span>{label}</span>
                 </div>
                 <span className="day-ratio">{compCount}/{arr.length}</span>
-              </div>
+              </button>
               {isExpanded && (
                 <div className="day-tasks">
                   {arr.map(t => {

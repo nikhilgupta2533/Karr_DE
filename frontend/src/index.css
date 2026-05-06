@@ -125,6 +125,12 @@ body {
   padding-bottom: calc(var(--nav-height) + 40px);
 }
 
+@media (min-width: 1024px) {
+  .app-container {
+    max-width: 980px;
+  }
+}
+
 /* Glassmorphism Core */
 .glass-panel {
   background: var(--bg-glass);
