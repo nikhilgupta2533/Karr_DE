@@ -1,6 +1,8 @@
 .bottom-nav {
   position: fixed;
   bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
   width: 100%;
   max-width: 500px;
   height: calc(var(--nav-height) + env(safe-area-inset-bottom));

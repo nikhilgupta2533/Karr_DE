@@ -123,12 +123,7 @@ body {
   position: relative;
   min-height: 100vh;
   padding-bottom: calc(var(--nav-height) + 40px);
-}
-
-@media (min-width: 1024px) {
-  .app-container {
-    max-width: 980px;
-  }
+  margin: 0 auto;
 }
 
 /* Glassmorphism Core */
