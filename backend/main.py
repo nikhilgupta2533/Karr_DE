@@ -5,7 +5,7 @@ import time
 import urllib.request
 import urllib.error
 import google.generativeai as genai
-from fastapi import FastAPI, Depends, HTTPException, Header
+from fastapi import FastAPI, Depends, HTTPException, Header, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text, inspect
@@ -39,6 +39,9 @@ TASK_COLUMN_DEFS = {
     "subtasks": "TEXT",
     "user_id": "TEXT DEFAULT 'default'",
     "missed_reason": "TEXT",
+    "cognitive_weight": "INTEGER DEFAULT 1",
+    "reschedule_count": "INTEGER DEFAULT 0",
+    "target_date": "TEXT",
 }
 
 HABIT_COLUMN_DEFS = {
@@ -363,35 +366,6 @@ async def plan_day(payload: models.PlanDayRequest, x_api_key: Optional[str] = He
     except Exception:
         raise HTTPException(status_code=422, detail="AI returned invalid plan format. Please try again.")
 
-@app.post("/api/tasks/note-to-task", response_model=models.NoteToTaskResponse)
-async def note_to_task(
-    payload: models.NoteToTaskRequest,
-    x_api_key: Optional[str] = Header(None),
-    x_local_date: Optional[str] = Header(None),
-    db: Session = Depends(get_db),
-    uid: str = Depends(get_current_uid)
-):
-    """Convert a free-form note/idea into a clean, actionable task title using AI."""
-    api_key = x_api_key if x_api_key else os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise HTTPException(status_code=503, detail="No Gemini API key configured")
-
-    system_prompt, user_prompt = note_to_task_prompt(payload.note_title, payload.note_body)
-    local_date = x_local_date if x_local_date else datetime.now(timezone.utc).strftime("%Y-%m-%d")
-
-    result, error_reason = await call_gemini_async(api_key, system_prompt, user_prompt, db, uid, local_date)
-    if not result:
-        raise HTTPException(status_code=503, detail=f"AI unavailable: {error_reason}")
-
-    try:
-        data = validate_and_repair_json(result, dict)
-        title = data.get("title", "").strip().strip('"')
-        if not title:
-            raise ValueError("empty title")
-        return models.NoteToTaskResponse(title=title)
-    except Exception:
-        raise HTTPException(status_code=422, detail="AI returned invalid format. Please try again.")
-
 
 @app.post("/api/tasks", response_model=models.TaskResponse)
 async def create_task(task: models.TaskCreate, x_api_key: Optional[str] = Header(None), x_local_date: Optional[str] = Header(None), db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
@@ -551,35 +525,43 @@ def clear_tasks(db: Session = Depends(get_db), uid: str = Depends(get_current_ui
     db.commit()
     return {"status": "cleared"}
 
-# FIX: date auto-update — dedicated midnight sync endpoint
-# Marks overdue pending tasks as missed and spawns next recurring occurrences.
-# Called by frontend on app open (and again at midnight via the reload trigger).
-@app.post("/api/tasks/sync-recurring")
-def sync_recurring(
-    db: Session = Depends(get_db),
-    uid: str = Depends(get_current_uid),
-    x_local_date: Optional[str] = Header(None),
-):
-    today_str = x_local_date or datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    all_pending = db.query(models.TaskDB).filter(
+# ── CLEAN SLATE ENGINE ────────────────────────────────────────────────────────
+def execute_midnight_clean_slate(db: Session, uid: str):
+    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    today_str = today.strftime("%Y-%m-%d")
+    
+    stale_tasks = db.query(models.TaskDB).filter(
         models.TaskDB.user_id == uid,
-        models.TaskDB.status == "pending",
+        models.TaskDB.status == "pending"
     ).all()
-    spawned = 0
-    missed = 0
-    for t in all_pending:
-        t_date = t.addedAt.split("T")[0] if t.addedAt else today_str
+    
+    parked_count = 0
+    spawned_count = 0
+    for task in stale_tasks:
+        t_date = task.addedAt.split("T")[0] if task.addedAt else today_str
         if t_date < today_str:
-            prev_status = t.status
-            t.status = "missed"
-            missed += 1
-            # FIX: date auto-update — correctly compute next due date per recurrence type:
-            # Daily → +1 day, Weekly → +7 days, Monthly → +1 month (same day)
-            spawn_next_recurring_task(db, t, prev_status)
-            spawned += 1
-    if missed:
-        db.commit()
-    return {"status": "synced", "missed": missed, "spawned": spawned, "today": today_str}
+            previous_status = task.status
+            task.status = "parked"
+            
+            event = models.TaskEventDB(
+                id=str(uuid4()),
+                task_id=task.id,
+                user_id=task.user_id,
+                event_type="parked",
+                event_metadata={"missed_date": t_date}
+            )
+            db.add(event)
+            parked_count += 1
+            
+            spawn_next_recurring_task(db, task, previous_status)
+            spawned_count += 1
+            
+    db.commit()
+
+@app.post("/api/system/trigger-midnight-sync")
+async def trigger_midnight_sync(background_tasks: BackgroundTasks, db: Session = Depends(get_db), uid: str = Depends(get_current_uid)):
+    background_tasks.add_task(execute_midnight_clean_slate, db, uid)
+    return {"status": "Clean Slate processing started in background."}
 
 
 @app.delete("/api/account")
@@ -760,6 +742,35 @@ def get_heatmap(habit_id: str, x_local_date: Optional[str] = Header(None), db: S
         result.append(models.HeatmapEntry(date=log.logged_date, done=True, count=1))
     return result
 
+
+@app.post("/api/tasks/note-to-task", response_model=models.NoteToTaskResponse)
+async def note_to_task(
+    payload: models.NoteToTaskRequest,
+    x_api_key: Optional[str] = Header(None),
+    x_local_date: Optional[str] = Header(None),
+    db: Session = Depends(get_db),
+    uid: str = Depends(get_current_uid)
+):
+    """Convert a free-form note/idea into a clean, actionable task title using AI."""
+    api_key = x_api_key if x_api_key else os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=503, detail="No Gemini API key configured")
+
+    system_prompt, user_prompt = note_to_task_prompt(payload.note_title, payload.note_body)
+    local_date = x_local_date if x_local_date else datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+    result, error_reason = await call_gemini_async(api_key, system_prompt, user_prompt, db, uid, local_date)
+    if not result:
+        raise HTTPException(status_code=503, detail=f"AI unavailable: {error_reason}")
+
+    try:
+        data = validate_and_repair_json(result, dict)
+        title = data.get("title", "").strip().strip('"')
+        if not title:
+            raise ValueError("empty title")
+        return models.NoteToTaskResponse(title=title)
+    except Exception:
+        raise HTTPException(status_code=422, detail="AI returned invalid format. Please try again.")
 
 # ── FOLDERS ───────────────────────────────────────────────────────────────────
 

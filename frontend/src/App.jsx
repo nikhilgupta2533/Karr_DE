@@ -10,6 +10,7 @@ import { RecordsTab } from './components/RecordsTab';
 import { InsightsTab } from './components/InsightsTab';
 import { HabitsTab } from './components/HabitsTab';
 import { PlanTab } from './components/PlanTab';
+
 import { SettingsModal } from './components/SettingsModal';
 import { AuthScreen } from './components/AuthScreen';
 import { ReviewMissedModal } from './components/ReviewMissedModal';
@@ -107,7 +108,7 @@ function App() {
 
   // Missed pattern for Plan Day
   const missedPattern = (() => {
-    const missed = tasks.filter(t => t.status === 'missed');
+    const missed = tasks.filter(t => t.status === 'parked');
     if (!missed.length) return null;
     const dayC = [0,0,0,0,0,0,0];
     missed.forEach(t => dayC[new Date(t.addedAt).getDay()]++);

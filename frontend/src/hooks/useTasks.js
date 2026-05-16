@@ -90,13 +90,13 @@ export function useTasks(idToken = null, getFreshToken = null) {
       const token = getFreshToken ? await getFreshToken() : idToken;
       if (token) headers['Authorization'] = `Bearer ${token}`;
       
-      // FIX: date auto-update — call sync-recurring on every fetch to ensure overnight tasks are properly spawned
+      // FIX: trigger clean slate engine on app load
       try {
-        await fetch(`${API_HOST}/api/tasks/sync-recurring`, {
+        await fetch(`${API_HOST}/api/system/trigger-midnight-sync`, {
           method: 'POST',
           headers: { ...headers, 'X-Local-Date': getYYYYMMDD(new Date()) }
         });
-      } catch (e) { console.warn('sync-recurring failed', e); }
+      } catch (e) { console.warn('trigger-midnight-sync failed', e); }
 
       const res = await fetch(API_URL, { headers });
       if (!res.ok) {
@@ -412,7 +412,7 @@ export function useTasks(idToken = null, getFreshToken = null) {
     const todayStr = getYYYYMMDD(new Date());
     const todaysTasks = tasks.filter(t => getYYYYMMDD(new Date(t.addedAt)) === todayStr);
     const completedToday = todaysTasks.filter(t => t.status === 'completed').length;
-    const missedToday = todaysTasks.filter(t => t.status === 'missed').length;
+    const missedToday = todaysTasks.filter(t => t.status === 'parked').length;
     
     let taskScore = 0;
     if (todaysTasks.length > 0) {

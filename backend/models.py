@@ -1,8 +1,27 @@
-from sqlalchemy import Column, Integer, String, Boolean, Date
+from sqlalchemy import Column, Integer, String, Boolean, Date, Enum, JSON, ForeignKey, DateTime
+from sqlalchemy.orm import relationship
 from backend.database import Base
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 import datetime
+import enum
+
+# ─── Enums ────────────────────────────────────────────────────────────────────
+
+class TaskStatus(str, enum.Enum):
+    PENDING = "pending"
+    COMPLETED = "completed"
+    PARKED = "parked" # Replaces "missed/overdue" for guilt-free restart
+    DECOMPOSED = "decomposed"
+
+class EventType(str, enum.Enum):
+    CREATED = "created"
+    COMPLETED = "completed"
+    SNOOZED = "snoozed"
+    PARKED = "parked"
+    RECOVERED = "recovered"
+    AI_DECOMPOSED = "ai_decomposed"
+
 
 # ─── SQLAlchemy ORM Models ────────────────────────────────────────────────────
 
@@ -14,7 +33,13 @@ class TaskDB(Base):
     title = Column(String, nullable=True)
     category = Column(String, default="Personal")
     priority = Column(String, default="medium", nullable=True)
-    status = Column(String, default="pending")  # pending, completed, missed
+    status = Column(String, default=TaskStatus.PENDING.value) 
+    
+    # Execution Architecture Fields
+    cognitive_weight = Column(Integer, default=1) # 1 = Trivial, 5 = Overwhelming
+    reschedule_count = Column(Integer, default=0) 
+    target_date = Column(String, nullable=True) # Used for daily tracking
+
     addedAt = Column(String)
     completedAt = Column(String, nullable=True)
     is_pinned = Column(Integer, default=0, nullable=False)
@@ -24,6 +49,44 @@ class TaskDB(Base):
     subtasks = Column(String, nullable=True)  # JSON array string
     user_id = Column(String, default="default", nullable=True)
     missed_reason = Column(String, nullable=True)
+
+    events = relationship("TaskEventDB", back_populates="task", cascade="all, delete-orphan")
+
+
+class TaskEventDB(Base):
+    """The core of the behavioral analytics system."""
+    __tablename__ = "task_events"
+    
+    id = Column(String, primary_key=True)
+    task_id = Column(String, ForeignKey("tasks.id"))
+    user_id = Column(String, index=True)
+    
+    event_type = Column(String, nullable=False) # e.g. "snoozed", "completed"
+    timestamp = Column(DateTime, default=datetime.datetime.utcnow)
+    
+    # Store contextual data: e.g., "Snoozed from Monday to Tuesday"
+    event_metadata = Column(JSON, nullable=True) 
+    
+    task = relationship("TaskDB", back_populates="events")
+
+
+class ResilienceScoreDB(Base):
+    """Replaces vanity analytics. Tracks recovery from failure."""
+    __tablename__ = "resilience_scores"
+    
+    id = Column(String, primary_key=True)
+    user_id = Column(String, unique=True, index=True)
+    current_score = Column(Integer, default=0)
+    consecutive_failed_days = Column(Integer, default=0)
+
+
+class AICacheDB(Base):
+    __tablename__ = "ai_cache"
+
+    prompt_hash = Column(String, primary_key=True, index=True)
+    action = Column(String, primary_key=True)
+    response = Column(JSON, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
 
 class AIUsageDB(Base):
@@ -55,29 +118,6 @@ class HabitLogDB(Base):
     created_at = Column(String, nullable=True)
 
 
-class FolderDB(Base):
-    __tablename__ = "folders"
-
-    id = Column(String, primary_key=True, index=True)
-    user_id = Column(String, default="default", nullable=False)
-    name = Column(String, nullable=False)
-    emoji = Column(String, nullable=True)
-    created_at = Column(String, nullable=True)
-
-
-class NoteDB(Base):
-    __tablename__ = "notes"
-
-    id = Column(String, primary_key=True, index=True)
-    folder_id = Column(String, nullable=False)
-    user_id = Column(String, default="default", nullable=False)
-    title = Column(String, nullable=True)
-    body = Column(String, nullable=True)
-    scheduled = Column(String, nullable=True) # JSON string array
-    created_at = Column(String, nullable=True)
-    updated_at = Column(String, nullable=True)
-
-
 # ─── Pydantic Schemas — Tasks ─────────────────────────────────────────────────
 
 class TaskCreate(BaseModel):
@@ -91,8 +131,9 @@ class TaskCreate(BaseModel):
     is_recurring: bool = False
     recurrence: Optional[str] = None
     due_time: Optional[str] = None
-    subtasks: Optional[str] = None  # JSON array string
+    subtasks: Optional[str] = None  
     status: Optional[str] = "pending"
+    target_date: Optional[str] = None
 
 
 class TaskResponse(BaseModel):
@@ -113,6 +154,9 @@ class TaskResponse(BaseModel):
     ai_failed: bool = False
     ai_failure_reason: Optional[str] = None
     missed_reason: Optional[str] = None
+    cognitive_weight: int = 1
+    reschedule_count: int = 0
+    target_date: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -126,10 +170,11 @@ class TaskUpdate(BaseModel):
     due_time: Optional[str] = None
     subtasks: Optional[str] = None
     missed_reason: Optional[str] = None
+    target_date: Optional[str] = None
+    reschedule_count: Optional[int] = None
 
 
 class TaskUpdateRequest(BaseModel):
-    """Full partial-update schema for PATCH /api/tasks/{id}"""
     title: Optional[str] = None
     category: Optional[str] = None
     priority: Optional[str] = None
@@ -139,6 +184,7 @@ class TaskUpdateRequest(BaseModel):
     due_time: Optional[str] = None
     subtasks: Optional[str] = None
     missed_reason: Optional[str] = None
+    target_date: Optional[str] = None
 
 
 class TaskUpdateWithId(TaskUpdate):
@@ -150,30 +196,24 @@ class TaskUpdateWithId(TaskUpdate):
 class DecomposeRequest(BaseModel):
     title: str
 
-
 class DecomposeResponse(BaseModel):
     steps: List[str]
-
 
 class RewriteRequest(BaseModel):
     title: str
 
-
 class RewriteResponse(BaseModel):
     title: str
-
 
 class PlanTaskItem(BaseModel):
     task_id: str
     order: int
     reason: str
 
-
 class PlanDayRequest(BaseModel):
     tasks: List[dict]
     missed_pattern: Optional[str] = None
     current_time: Optional[str] = None
-
 
 class PlanDayResponse(BaseModel):
     message: str
@@ -189,7 +229,6 @@ class HabitCreate(BaseModel):
     difficulty: Optional[str] = "medium"
 
 
-# FIX: habit edit — partial update schema for PATCH /api/habits/{id}
 class HabitUpdate(BaseModel):
     name: Optional[str] = None
     icon: Optional[str] = None
@@ -218,7 +257,6 @@ class HeatmapEntry(BaseModel):
     done: bool
     count: int = 0
 
-
 # ─── Pydantic Schemas — Notes / Ideas ────────────────────────────────────────
 
 class NoteToTaskRequest(BaseModel):
@@ -230,6 +268,29 @@ class NoteToTaskResponse(BaseModel):
 
 
 # ─── Pydantic Schemas — Folders & Notes ──────────────────────────────────────
+
+class FolderDB(Base):
+    __tablename__ = "folders"
+
+    id = Column(String, primary_key=True, index=True)
+    user_id = Column(String, default="default", nullable=False)
+    name = Column(String, nullable=False)
+    emoji = Column(String, nullable=True)
+    created_at = Column(String, nullable=True)
+
+
+class NoteDB(Base):
+    __tablename__ = "notes"
+
+    id = Column(String, primary_key=True, index=True)
+    folder_id = Column(String, nullable=False)
+    user_id = Column(String, default="default", nullable=False)
+    title = Column(String, nullable=True)
+    body = Column(String, nullable=True)
+    scheduled = Column(String, nullable=True) # JSON string array
+    created_at = Column(String, nullable=True)
+    updated_at = Column(String, nullable=True)
+
 
 class FolderCreate(BaseModel):
     id: str
