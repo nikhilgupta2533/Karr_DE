@@ -1,347 +1,145 @@
-# Kar De - Complete As-Built Project Description
+# Kar De - Complete As-Built Project Description & Roadmap
 
-This document is the full implementation-level description of **Kar De** as currently built in this repository.
-It captures architecture, modules, data model, API surface, AI behavior, UX systems, and deployed runtime behavior.
+This document serves as the full implementation-level description of **Kar De** as currently built, along with an in-depth analysis of its current state and a detailed roadmap for planned updates and changes. 
+
+It captures the architecture, modules, data model, API surface, AI behavior, UX systems, deployed runtime behavior, and future technical strategies.
 
 ---
 
 ## 1) Product Overview
 
-**Kar De** is an AI-assisted productivity web app focused on converting raw thoughts into executable action and sustained routines.
+**Kar De** is an AI-assisted productivity web app focused on converting raw thoughts into executable actions and sustained routines.
 
 Core product pillars:
-- AI-assisted task structuring (parse, rewrite, decompose, plan-day, note-to-task)
-- Execution-first daily workflow (Today tab + Focus Mode)
-- Behavioral consistency systems (habits, streaks, missed-day tracking, score)
-- Visual analytics and long-term trends
-- Cloud-authenticated, local-resilient UX
+- **AI-Assisted Task Structuring**: Parse, rewrite, decompose, plan-day, note-to-task functionalities.
+- **Execution-First Daily Workflow**: "Today" tab and "Focus Mode" drive immediate action.
+- **Behavioral Consistency Systems**: Habits, streaks, missed-day tracking, and productivity scores.
+- **Visual Analytics**: Interactive data visualization of long-term trends and historical performance.
+- **Resilient UX**: Cloud-authenticated with a robust, local-fallback design to handle network drops.
 
 ---
 
 ## 2) Monorepo & Runtime Layout
 
 Root structure:
-- `frontend/` -> React 19 + Vite single-page app
-- `backend/` -> FastAPI API layer + SQLAlchemy models + Gemini orchestration
-- `api/index.py` -> Vercel serverless entry wrapper
-- `karde_tasks.db` -> SQLite persistence in local/dev setup
-- `vercel.json` -> routing/deployment behavior
+- `frontend/` -> React 19 + Vite single-page application.
+- `backend/` -> FastAPI API layer + SQLAlchemy models + Gemini orchestration.
+- `api/index.py` -> Vercel serverless entry wrapper.
+- `karde_tasks.db` -> SQLite persistence (local/dev setup).
+- `vercel.json` -> Routing/deployment behavior definition.
 
 Execution model:
-- Frontend runs at Vite dev server or static Vercel build.
-- Backend runs as FastAPI (local uvicorn) or serverless (Vercel functions).
-- API-first architecture: frontend features map directly to REST endpoints.
+- **Frontend**: Runs via Vite dev server or static Vercel build.
+- **Backend**: Runs as FastAPI (local uvicorn) or serverless (Vercel functions).
+- **Architecture**: API-first architecture where frontend features map directly to REST endpoints.
 
 ---
 
 ## 3) Technology Stack (Implemented)
 
 ### Frontend
-- React 19, React DOM 19
-- Vite 8
-- Vanilla CSS (custom design system with CSS variables)
-- `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities` (task reorder)
-- `chart.js` + `react-chartjs-2` (analytics visuals)
-- `lucide-react` (icon system)
-- `firebase` web SDK (client auth)
-- `html2canvas` (share/export image captures)
+- **React 19** & **React DOM 19**
+- **Vite 8**
+- **Vanilla CSS**: Custom design system utilizing CSS variables, glassmorphism, and responsive breakpoints.
+- **@dnd-kit** (`core`, `sortable`, `utilities`): Powers the highly interactive drag-and-drop task reordering.
+- **Chart.js** & **react-chartjs-2**: Renders beautiful analytics visuals and heatmaps.
+- **Lucide React**: Consistent and modern icon system.
+- **Firebase Web SDK**: Client-side authentication.
+- **html2canvas**: Enables sharing and exporting of image captures.
 
 ### Backend
-- FastAPI + Uvicorn
-- SQLAlchemy ORM
-- Google Generative AI (`google-generativeai`)
-- `python-dotenv`, `python-dateutil`, `mangum`, `psycopg2-binary`
-- SQLite by default, with PostgreSQL-safe migration patterns in startup logic
+- **FastAPI** + **Uvicorn**: High-performance async Python framework.
+- **SQLAlchemy ORM**: Database interactions.
+- **Google Generative AI** (`google-generativeai`): Powers the LLM-driven features (Gemini Flash & Pro models).
+- **Firebase Admin/Auth**: Token validation.
+- **SQLite** (Default) / **PostgreSQL**: Production-ready SQL patterns utilized in start-up logic.
 
 ---
 
-## 4) Backend Architecture (FastAPI)
+## 4) What is DONE: In-Depth Feature Analysis
 
-### 4.1 Startup & Dynamic Schema Hardening
-At server startup, `backend/main.py`:
-- creates metadata tables
-- inspects existing DB schema
-- auto-adds missing columns in `tasks` and `habits`
-- ensures `habit_logs` table exists for legacy DBs
+### 4.1 Task Lifecycle Management
+- **Natural Input**: Raw thought capturing with heuristics guessing the task category.
+- **Recurring Tasks**: Daily, weekly, monthly recurrences handling. Overnight roll-over handles missed logic dynamically.
+- **Card Capabilities**: Quick/full edit modes, priority controls, completion toggles.
+- **Subtasks**: Granular tracking with progress rings.
+- **"Midnight Correctness"**: Seamless day transitions syncing missed tasks and spawning recurrences via a dedicated midnight sync endpoint.
+- **Daily Check-In & Mood Tracking**: A prompt to capture user mood (Focused, Tired, Lazy) and provide contextual suggestions.
+- **Smart Reminders**: Automated evening notifications reminding users to complete tasks if no progress has been made by 6:00 PM.
 
-This provides lightweight migration resilience without Alembic.
+### 4.2 AI Assistant Ecosystem
+- **Task Rewrite**: Upgrades user input to cleaner, professional phrasing.
+- **Task Decompose**: Breaks down overwhelming tasks into up to 5 manageable sub-steps.
+- **Plan Day**: Generates a tailored daily schedule using pending tasks, current time context, and historical missed patterns.
+- **Note-to-Task**: AI reads user notes and extracts actionable task cards automatically.
+- **Safeguards**: Model fallback chain (Flash -> Flash Lite -> Pro), 300ms call spacing, daily usage tracking, and markdown-fence JSON repairing.
 
-### 4.2 Authentication Model
-- Firebase ID token verification via Google Identity Toolkit REST API
-- 30-minute in-memory token cache to reduce repeated network verification
-- strict Bearer handling in `get_current_uid`
-- token verification is moved off event loop using `asyncio.to_thread`
+### 4.3 Focus & Execution
+- **Focus Mode**: A full-screen distraction-free overlay.
+- **Zen Timer**: Includes a visual progress ring for deep work sessions.
+- **Scoring System**: Awards points for completed sessions, penalizes interruptions, and provides score explanations.
 
-Behavior:
-- with proper Firebase setup: unauthorized requests return 401
-- local/dev fallback behavior exists for default project compatibility
+### 4.4 Habits & Behavioral Tracking
+- **Habit Management**: Create, edit (with inline forms), and soft-delete habits.
+- **Daily Logging**: Log/unlog capabilities with streak calculations.
+- **Visual Heatmaps**: Integration with Chart.js to map out consistency visually.
+- **Identity & Difficulty**: Allows users to attach identity goals (e.g., "Become a writer") to habits.
 
-### 4.3 AI Orchestration Layer (`backend/ai.py`)
-Implemented safeguards:
-- model fallback chain:
-  - `models/gemini-2.5-flash`
-  - `models/gemini-2.5-flash-lite`
-  - `models/gemini-2.0-flash`
-  - `models/gemini-2.0-flash-lite`
-  - `models/gemini-pro-latest`
-- enforced 300ms spacing between calls using lock + timestamp
-- per-user per-day AI usage tracking via `ai_usage`
-- default daily limit: `DAILY_AI_LIMIT = 900`
-- markdown-fence tolerant JSON validation/repair path
+### 4.5 Notes & Ideation
+- **Folder Workspace**: Folder-based hierarchical notes organization.
+- **Local-First + Sync**: Background syncing with the backend to ensure fast perceived performance.
+- **Scheduling**: Attaching schedule metadata to notes.
 
-Returned AI failure reasons include:
-- `daily_limit`
-- `rate_limit`
-- `model_not_found`
-- `offline`
-
-### 4.4 REST API Surface (Implemented)
-
-#### Root
-- `GET /` -> health status
-
-#### Tasks
-- `GET /api/tasks`
-- `PUT /api/tasks/bulk`
-- `POST /api/tasks`
-- `PUT /api/tasks/{task_id}/toggle`
-- `PUT /api/tasks/{task_id}`
-- `PATCH /api/tasks/{task_id}`
-- `PUT /api/tasks/midnight-miss`
-- `POST /api/tasks/clear`
-- `POST /api/tasks/sync-recurring`
-- `DELETE /api/tasks/{task_id}`
-
-#### AI Task Utilities
-- `POST /api/tasks/rewrite`
-- `POST /api/tasks/decompose`
-- `POST /api/tasks/plan-day`
-- `POST /api/tasks/note-to-task`
-
-#### Habits
-- `GET /api/habits`
-- `POST /api/habits`
-- `PATCH /api/habits/{habit_id}`
-- `DELETE /api/habits/{habit_id}`
-- `POST /api/habits/{habit_id}/log`
-- `DELETE /api/habits/{habit_id}/log`
-- `GET /api/habits/{habit_id}/heatmap`
-
-#### Notes & Folders
-- `GET /api/notes/folders`
-- `POST /api/notes/folders`
-- `DELETE /api/notes/folders/{folder_id}`
-- `GET /api/notes`
-- `POST /api/notes`
-- `PUT /api/notes/{note_id}`
-- `DELETE /api/notes/{note_id}`
-
-#### Account
-- `DELETE /api/account` (task + habit data cascade delete in backend)
+### 4.6 Security & Resilience
+- **Auth**: Firebase token verification with a 30-minute in-memory cache to reduce network overhead.
+- **Optimistic UI**: Immediate UI updates with background server reconciliation.
+- **Data Scoping**: Strict per-user isolation of data. Account deletion cascades through tasks and habits securely.
 
 ---
 
-## 5) Data Model (SQLAlchemy + Pydantic)
+## 5) What is PLANNED: Future Roadmap & Upgrades
 
-### Primary DB tables
-- `tasks`
-- `habits`
-- `habit_logs`
-- `folders`
-- `notes`
-- `ai_usage`
+As **Kar De** evolves from a robust MVP to a premier productivity platform, the following features and architectural shifts are planned.
 
-### Key Task fields
-- ids, raw input, AI title, category, priority
-- status (`pending/completed/missed`)
-- timestamps (`addedAt/completedAt`)
-- pin flag, recurrence, due time
-- `subtasks` (JSON string)
-- `missed_reason`
-- `user_id`
+### 5.1 Advanced Progressive Web App (PWA) Integration
+- **Full Offline-First Mode**: Implement Service Workers to intercept API calls, caching mutations locally using IndexedDB when offline, and automatically flushing them to the backend upon reconnection.
+- **Installability**: Provide a standard `manifest.json` for proper mobile/desktop "Add to Home Screen" support.
 
-### Habit fields
-- name, icon, identity, difficulty
-- active soft-delete model
-- calculated response fields: streak/logged_today/missed_days
+### 5.2 Deeper Ecosystem Integrations
+- **Google Calendar / Outlook Sync**: Two-way synchronization allowing tasks scheduled in Kar De to appear on calendars, and calendar events to reflect as time-blocked "focus" sessions.
+- **Webhooks & APIs**: Exposing a safe public API or Zapier integration for power users to create custom pipelines (e.g., Slack messages to Kar De tasks).
 
-### Notes fields
-- folder relation, title/body
-- `scheduled` (JSON string for planned links)
-- created/updated timestamps
+### 5.3 Next-Gen AI Capabilities
+- **Predictive Prioritization**: Utilizing historical analytics to predict which tasks the user is likely to avoid and suggesting behavioral interventions.
+- **Conversational "Review" Agent**: A chatbot interface at the end of the week summarizing accomplishments, noting friction points, and helping the user plan the upcoming week dynamically.
+- **Voice-to-Task Generation**: Native microphone integration feeding into an AI whisper model to capture highly unstructured audio dumps and translate them into organized project folders and tasks.
 
----
+### 5.4 Enhanced Analytics & Insights
+- **Burnout Predictors**: Analyzing "missed task" ratios and focus-session interruptions to warn users before productivity drops off.
+- **Year-in-Review**: A Spotify-wrapped style yearly recap highlighting completed habits, longest streaks, and top productivity hours.
 
-## 6) Frontend Architecture
+### 5.5 Social & Collaborative Features
+- **Accountability Partners**: The ability to link accounts with a friend to share habit streaks and "check-in" statuses (without sharing personal task details).
+- **Shared Folders/Projects**: Expanding the Data Model to allow multiple `user_id`s or `org_id`s access to specific Notes and Task categories.
 
-### 6.1 Core app composition
-Main shell (`App.jsx`) composes:
-- `Header`
-- tab body (`Today`, `Plan`, `Records`, `Habits`, `Insights`)
-- `BottomNav`
-- `SettingsModal`
-- `ReviewMissedModal`
-- toast system
-- auth/splash guards
-
-### 6.2 Hooks (state + side effects)
-- `useAuth`
-  - Firebase session listener
-  - fresh token retrieval for each API call path
-  - account deletion flow (backend delete, then Firebase delete)
-- `useTasks`
-  - optimistic task mutations + reconciliation
-  - local cache fallback
-  - duplicate detection
-  - pin persistence
-  - due-time notifications
-  - AI flows (rewrite/decompose/plan)
-  - productivity score calculation
-  - midnight sync-recurring integration
-- `useHabits`
-  - CRUD + log/unlog + heatmap + patch update
-- `useNotes`
-  - local-first notes/folders
-  - background sync with backend
-  - folder rename workaround path (delete+recreate due to no dedicated folder patch route)
-- `useSound`
-  - synthesized interaction tones
-
-### 6.3 Visual/interaction system
-- glassmorphism + blur surfaces
-- theme system (`data-theme` light/dark)
-- animated splash screen
-- responsive bottom nav + card layout
-- non-intrusive toast action prompts
+### 5.6 UI/UX & Technical Polish
+- **Push Notifications**: Moving from basic browser notification APIs to robust Firebase Cloud Messaging (FCM) for reliable cross-platform push reminders.
+- **Customization Engine**: Allowing users to define custom color themes, overriding the default light/dark CSS variables.
+- **Pagination & Infinite Scroll**: As the `tasks` and `habit_logs` tables grow over years, refactoring the `GET /api/tasks` endpoint to support cursor-based pagination for faster load times.
+- **Database Migration Framework**: Graduating from the current dynamic auto-add column approach to a formal Alembic migration pipeline for safer production schema upgrades.
 
 ---
 
-## 7) Major Implemented Features (User-Level)
+## 6) Database Schema Expansion Plan
 
-### 7.1 Today execution workflow
-- natural task input bar
-- suggestion chips
-- recurrence selector
-- due time picker
-- AI decomposition preview with per-step include/exclude
-- templates (preset + user-editable)
-- sortable task list (`dnd-kit`)
-- 1-task-first visual emphasis
-
-### 7.2 Task card capabilities
-- quick and full edit modes
-- AI title rewrite in full editor
-- due-time inline edits
-- priority/category/difficulty/recurrence controls
-- pin, delete, focus, complete toggles
-- subtasks with progress ring and completion toggle
-
-### 7.3 Recurring + midnight correctness
-- pending tasks auto-mark missed when date rolls
-- recurring tasks spawn next instance (daily/weekly/monthly)
-- explicit `sync-recurring` API used on fetch/open to avoid stale date state
-
-### 7.4 Focus mode ecosystem
-- full-screen distraction-free overlay
-- zen timer with progress ring
-- interruption confirmation flow
-- focus score updates (+5 completed session, -10 interruption)
-- focus session summary (time + tasks completed)
-- score explanation popover
-
-### 7.5 Planning and notes
-- folder-based notes workspace
-- create/edit/delete notes
-- schedule metadata per note
-- note-to-task AI endpoint integration path
-
-### 7.6 Habits system
-- create/edit/delete (soft delete)
-- daily log/unlog
-- streak + missed day calculations
-- per-habit heatmap data API
-
-### 7.7 Insights/records layer
-- productivity score surfaced in header and insights flow
-- chart-driven historical perspective via Chart.js pipeline
-- records/history tab for completed and missed context
-
-### 7.8 Notifications and reminders
-- browser notifications permission flow
-- due-time scheduled reminders per task
-- evening reminder when no completion progress (app-level behavior)
+To support the planned roadmap, the following adjustments to the SQLAlchemy models are anticipated:
+- **`tasks` table**: Add `external_link_id` for Calendar sync mapping.
+- **`habits` table**: Add `shared_with` (JSON array of user IDs) for accountability partner features.
+- **`users` table**: Introduce a formal user preference table (theme settings, notification preferences, timezone overrides).
+- **`push_subscriptions` table**: To store FCM tokens for reliable delivery.
 
 ---
 
-## 8) AI Feature Matrix (What Exists Today)
-
-- **Task Parse (create task)**: converts raw thought to cleaner title; category guessed with heuristics.
-- **Task Rewrite**: rewrites title into cleaner/professional phrasing.
-- **Task Decompose**: returns up to 5 sub-steps.
-- **Plan Day**: returns ordered plan + reasons using pending tasks, current time, missed pattern.
-- **Note to Task**: converts note title/body to actionable task title.
-
-Safety and resilience:
-- strict JSON validation for all AI response contracts
-- fallback behavior to non-AI/local mode when unavailable
-- user-facing toasts for limit/offline/rate-limit states
-
----
-
-## 9) Reliability Patterns
-
-- optimistic UI across task/habit/note operations
-- server reconciliation after mutating operations
-- local storage cache for tasks/settings/notes/folders/pins
-- graceful offline messaging and fallback behavior
-- defensive endpoint ordering for task routes to avoid dynamic path conflicts
-
----
-
-## 10) Security & Data Ownership
-
-- Firebase token based API authorization
-- per-user data scoping in DB queries
-- account delete endpoint removes user task and habit data (including habit logs)
-- no hardcoded production API keys in source
-
-Note:
-- notes/folders are user-scoped and deletable individually
-- account deletion path currently explicitly clears tasks/habits on backend
-
----
-
-## 11) Configuration
-
-Environment variables used:
-- `GEMINI_API_KEY`
-- `FIREBASE_API_KEY`
-- `FIREBASE_PROJECT_ID`
-- `DATABASE_URL` (optional override; SQLite default exists)
-- `CORS_ORIGINS` (optional extra allowed origins)
-- `VITE_API_URL` (frontend API host override)
-
----
-
-## 12) Deployment Model
-
-- Frontend builds through Vite and is served as static assets.
-- Backend runs as FastAPI locally and via Vercel serverless wrapper in production.
-- `vercel.json` routes `/api/*` into backend handler path.
-- Database is SQLite in local/dev; code is written with PostgreSQL-compatible SQL patterns where practical.
-
----
-
-## 13) Current Status Snapshot
-
-Kar De is currently a feature-rich AI productivity platform with:
-- complete task lifecycle management
-- active AI assistant workflows
-- focus and scoring mechanics
-- habits and notes subsystems
-- responsive production-style UI
-- authenticated multi-user backend structure
-
-**Status**: Active and operational  
-**Doc Type**: Implementation-level as-built description  
+**Status**: Active Development  
+**Doc Type**: Implementation-level description & Product Roadmap  
 **Last Updated**: May 2026
